@@ -1,0 +1,24 @@
+# Credentials — NEVER commit
+.env
+.env.local
+.env.*.local
+
+# Playwright artefacts
+node_modules/
+playwright-report/
+test-results/
+results/
+*.log
+
+# Local tracker copies (uploaded via workflow or committed separately)
+# Uncomment the next line if you do NOT want to commit the tracker:
+# HatchEvent-UAT-Tracker-*.xlsx
+# HatchEvent_UAT_Tracker*.xlsx
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+~$*

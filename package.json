@@ -1,0 +1,16 @@
+{
+  "name": "hatchevent-uat",
+  "version": "1.0.0",
+  "description": "Playwright UAT suite for HatchEvent Platform",
+  "scripts": {
+    "test":         "playwright test",
+    "test:eo":      "playwright test tests/eo-journey.spec.js",
+    "test:vendor":  "playwright test tests/vendor-registration.spec.js",
+    "test:rfq":     "playwright test tests/rfq-process.spec.js",
+    "test:svc":     "playwright test tests/event-service.spec.js",
+    "test:report":  "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

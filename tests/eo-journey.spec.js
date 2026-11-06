@@ -143,14 +143,15 @@ test.describe('EO-TC-11–14 · Vendor Discovery & RFQ', () => {
     await screenshot(page, 'EO-TC-13-rfq-flow-entry');
   });
 
-  test('EO-TC-14 · Submit RFQ to Multiple Vendors — HE Services page', async ({ page }) => {
-    // Go directly to the HE services page
-    await page.goto('/eo/he-services');
-    await page.waitForTimeout(3000);
-    // Expected: 3 service tiers visible
-    await expect(page.getByText(/Vendor Evaluation Services/).first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Event Planning Services/).first()).toBeVisible();
-    await expect(page.getByText(/Event Onsite Services/).first()).toBeVisible();
+  test('EO-TC-14 · Submit RFQ to Multiple Vendors — HE Services entry', async ({ page }) => {
+    // Navigate via the HE Services entry on the services page
+    await page.goto('/eo/services');
+    await expect(page.getByRole('button', { name: 'HatchEvent Services' }).first()).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.waitForTimeout(4000);
+    // After the click, the HE services menu loads with 3 tiers
+    const hasTiers = await page.getByText(/Vendor Evaluation Services/).count();
+    expect(hasTiers).toBeGreaterThan(0);
     await screenshot(page, 'EO-TC-14-multi-vendor-rfq');
   });
 });

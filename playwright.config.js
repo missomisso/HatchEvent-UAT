@@ -1,6 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
-require('dotenv').config();
+try { require('dotenv').config(); } catch (e) { /* dotenv optional (CI uses env vars directly) */ }
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -17,7 +17,7 @@ module.exports = defineConfig({
 
   use: {
     baseURL:       process.env.BASE_URL || 'https://portal.staging.hatchevent.com',
-    headless:      false,    // Set to true for unattended runs
+    headless:      true,    // headless in CI; use --headed CLI flag locally
     viewport:      { width: 1440, height: 900 },
     screenshot:    'only-on-failure',
     video:         'retain-on-failure',

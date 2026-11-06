@@ -1,0 +1,128 @@
+name: HatchEvent UAT
+
+on:
+  workflow_dispatch:
+    inputs:
+      journey:
+        description: 'Which journey to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - eo
+          - vendor
+          - rfq
+          - svc
+
+  schedule:
+    - cron: '0 19 * * 0-4'   # Sun–Thu 19:00 UTC = Mon–Fri 03:00 SGT
+
+jobs:
+  run-uat:
+    name: Run Playwright UAT
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      BASE_URL:        ${{ secrets.BASE_URL }}
+      EO_EMAIL:        ${{ secrets.EO_EMAIL }}
+      EO_PASSWORD:     ${{ secrets.EO_PASSWORD }}
+      VENDOR_EMAIL:    ${{ secrets.VENDOR_EMAIL }}
+      VENDOR_PASSWORD: ${{ secrets.VENDOR_PASSWORD }}
+      ADMIN_URL:       ${{ secrets.ADMIN_URL }}
+      ADMIN_EMAIL:     ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PASSWORD:  ${{ secrets.ADMIN_PASSWORD }}
+      TESTER_NAME:     'Laurent Misso (CI)'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install openpyxl
+        run: pip install openpyxl
+
+      - name: Determine test script
+        id: pick
+        run: |
+          case "${{ github.event.inputs.journey || 'all' }}" in
+            eo)     echo "script=test:eo"     >> "$GITHUB_OUTPUT" ;;
+            vendor) echo "script=test:vendor" >> "$GITHUB_OUTPUT" ;;
+            rfq)    echo "script=test:rfq"    >> "$GITHUB_OUTPUT" ;;
+            svc)    echo "script=test:svc"    >> "$GITHUB_OUTPUT" ;;
+            *)      echo "script=test"        >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Run Playwright tests
+        id: tests
+        continue-on-error: true
+        run: npm run ${{ steps.pick.outputs.script }}
+
+      - name: Update UAT tracker
+        if: always()
+        run: |
+          TRACKER=$(ls HatchEvent*UAT*Tracker*.xlsx 2>/dev/null | head -1)
+          if [ -z "$TRACKER" ]; then
+            echo "::warning::No tracker .xlsx found in repo — skipping tracker update"
+          elif [ ! -f results/results.json ]; then
+            echo "::warning::results/results.json not generated — skipping tracker update"
+          else
+            python3 update_tracker.py results/results.json "$TRACKER"
+          fi
+
+      - name: Upload updated tracker
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HatchEvent-UAT-Tracker-${{ github.run_number }}
+          path: HatchEvent*UAT*Tracker*.xlsx
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: playwright-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Write run summary
+        if: always()
+        run: |
+          PASS=$(grep -c '"status": "passed"' results/results.json 2>/dev/null || echo 0)
+          FAIL=$(grep -c '"status": "failed"' results/results.json 2>/dev/null || echo 0)
+          SKIP=$(grep -c '"status": "skipped"' results/results.json 2>/dev/null || echo 0)
+          {
+            echo "## HatchEvent UAT — Run #${{ github.run_number }}"
+            echo ""
+            echo "| Result | Count |"
+            echo "|--------|-------|"
+            echo "| Pass    | $PASS |"
+            echo "| Fail    | $FAIL |"
+            echo "| Skipped | $SKIP |"
+            echo ""
+            echo "Download the **updated tracker** and the **HTML report** from the Artifacts section above."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Propagate test exit status
+        if: steps.tests.outcome == 'failure'
+        run: exit 1

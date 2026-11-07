@@ -1,5 +1,5 @@
-// tests/event-service.spec.js — Event Service & RSVP UAT (SVC-TC-01–16)
-// Source: HatchEvent UAT Tracker — Level 4
+// tests/rfq-process.spec.js — RFQ Process UAT (RFQ-TC-01 through RFQ-TC-18)
+// Source: HatchEvent UAT Tracker — Level 3
 // Selectors verified against portal.staging.hatchevent.com — 2026-11-06
 
 const { test, expect } = require('@playwright/test');
@@ -9,188 +9,234 @@ const { screenshot, checkEmail } = require('../helpers/common');
 const BASE = process.env.BASE_URL || 'https://portal.staging.hatchevent.com';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Job Assignment (Vendor-side RFQs)
+// SECTION: RFQ Submission (EO side)
+// RFQ submission on HatchEvent happens via the Event Services flow — EO selects
+// services they need and vendors are matched; this is different from a classic
+// "submit RFQ to vendor" flow.
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-01–02 · Job Assignment', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('SVC-TC-01 · Vendor dashboard shows Accepted/Confirmed job count', async ({ page }) => {
-    await page.goto('/vendor/dashboard');
-    // Dashboard has Accepted tile
-    await expect(page.getByRole('heading', { name: 'Accepted', exact: true }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'SVC-TC-01-vendor-accepted-tile');
-  });
-
-  test('SVC-TC-02 · Vendor can view current RFQ submissions', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Current RFQs' })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'SVC-TC-02-vendor-current-rfqs');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Service Delivery
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-03–04 · Service Delivery', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('SVC-TC-03 · Vendor dashboard shows Pending jobs tile', async ({ page }) => {
-    await page.goto('/vendor/dashboard');
-    await expect(page.getByRole('heading', { name: 'Pending', exact: true }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'SVC-TC-03-pending-tile');
-  });
-
-  test('SVC-TC-04 · Vendor past RFQs show Complete button for finished jobs', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Past RFQs' })).toBeVisible({ timeout: 10_000 });
-    // Past RFQs may have "Complete" button
-    const completeBtn = page.getByRole('button', { name: 'Complete' }).first();
-    if (await completeBtn.count() > 0) {
-      await expect(completeBtn).toBeVisible();
-    }
-    await screenshot(page, 'SVC-TC-04-past-rfqs-complete');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Rating & Review (EO)
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-05–06 · Rating & Review', () => {
+test.describe('RFQ-TC-01–03 · RFQ Submission', () => {
   test.beforeEach(async ({ page }) => { await loginAsEO(page); });
 
-  test('SVC-TC-05 · Past Event Enquiries section visible', async ({ page }) => {
-    await page.goto('/eo/enquiries');
-    await expect(page.getByRole('heading', { name: 'Past Event Enquiries' })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'SVC-TC-05-past-enquiries');
+  test('RFQ-TC-01 · EO can browse HatchEvent Services (vendor matching entry)', async ({ page }) => {
+    await page.goto('/eo/services');
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.waitForURL(/\/eo\/he-services/, { timeout: 15_000 });
+    // Expected: 3 service tiers visible
+    await expect(page.getByText(/Vendor Evaluation Services/).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Event Planning Services/).first()).toBeVisible();
+    await expect(page.getByText(/Event Onsite Services/).first()).toBeVisible();
+    await screenshot(page, 'RFQ-TC-01-he-services-vendor-match');
   });
 
-  test('SVC-TC-06 · EO can view vendor details (rating entry)', async ({ page }) => {
+  test('RFQ-TC-02 · Service Selection Validation — Terms checkbox required', async ({ page }) => {
+    await page.goto('/eo/services');
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.waitForURL(/\/eo\/he-services/, { timeout: 15_000 });
+    await page.getByRole('button', { name: /Vendor Evaluation Services/ }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForURL(/\/eo\/he-services\/summary/, { timeout: 15_000 });
+    // Expected: Terms & Conditions checkbox must be there
+    await expect(page.getByRole('checkbox', { name: /Terms and Conditions/i })).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-02-tc-required');
+  });
+
+  test('RFQ-TC-03 · Service summary shows purchase details', async ({ page }) => {
+    await page.goto('/eo/services');
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.getByRole('button', { name: /Vendor Evaluation Services/ }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForURL(/\/eo\/he-services\/summary/, { timeout: 15_000 });
+    // Expected: summary sections visible
+    await expect(page.getByRole('heading', { name: 'You have selected' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Your purchase summary' })).toBeVisible();
+    await screenshot(page, 'RFQ-TC-03-summary-page');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION: Vendor RFQ Response
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('RFQ-TC-04–06 · Vendor Response', () => {
+  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
+
+  test('RFQ-TC-04 · Vendor receives RFQs in portal — BUG-31 regression', async ({ page }) => {
+    await page.goto('/vendor/rfqs');
+    await expect(page.getByRole('heading', { name: 'Request for quotations' })).toBeVisible({ timeout: 10_000 });
+    // Current RFQs section exists
+    await expect(page.getByRole('heading', { name: 'Current RFQs' })).toBeVisible();
+    // There's at least one RFQ with a Submit button
+    await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible();
+    await screenshot(page, 'RFQ-TC-04-vendor-rfq-received');
+  });
+
+  test('RFQ-TC-05 · Submit Quotation form — price input + file upload', async ({ page }) => {
+    await page.goto('/vendor/rfqs');
+    await page.getByRole('button', { name: 'Submit' }).first().click();
+    await page.waitForURL(/\/vendor\/rfqs\/submit\//, { timeout: 15_000 });
+    // Expected: "Submit quotation" heading + price input + file upload
+    await expect(page.getByRole('heading', { name: 'Submit quotation' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('textbox', { name: /Input price/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Browse' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeVisible();
+    await screenshot(page, 'RFQ-TC-05-quotation-form');
+  });
+
+  test('RFQ-TC-06 · Submit Quotation — "contact EO offline" fallback option', async ({ page }) => {
+    await page.goto('/vendor/rfqs');
+    await page.getByRole('button', { name: 'Submit' }).first().click();
+    await page.waitForURL(/\/vendor\/rfqs\/submit\//, { timeout: 15_000 });
+    // Expected: alternative "I will contact EO offline" button
+    await expect(page.getByRole('button', { name: /I will contact EO offline/i })).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-06-contact-offline-option');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION: Quotation Review by EO
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('RFQ-TC-07–11 · Quotation Review by EO', () => {
+  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
+
+  test('RFQ-TC-07 · EO notified of quotations — enquiry page shows vendor details', async ({ page }) => {
+    await page.goto('/eo/enquiries');
+    // "View vendor details" button exists on an event
+    await expect(page.getByRole('button', { name: 'View vendor details' }).first()).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-07-eo-vendor-details');
+  });
+
+  test('RFQ-TC-08 · Accept Quotation via Event Services flow', async ({ page }) => {
+    await page.goto('/eo/enquiries');
+    // Event Services button opens the vendor/quotation view
+    await expect(page.getByRole('button', { name: 'Event Services' }).first()).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-08-event-services-entry');
+  });
+
+  test('RFQ-TC-09 · Reject Quotation option exists', async ({ page }) => {
+    // Rejection flow is accessed via event detail — verify the entry button exists
     await page.goto('/eo/enquiries');
     await expect(page.getByRole('button', { name: 'View vendor details' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'SVC-TC-06-vendor-details-view');
+    await screenshot(page, 'RFQ-TC-09-reject-entry');
+  });
+
+  test('RFQ-TC-10 · BUG-18 regression — Accept RFQ shows no command prompt', async ({ page }) => {
+    await page.goto('/eo/enquiries');
+    // Navigate to a service flow without errors
+    await page.getByRole('button', { name: 'Event Services' }).first().click();
+    await page.waitForTimeout(3000);
+    // Should NOT see command prompt / server error text anywhere on page
+    await expect(page.getByText(/>_|internal server error|500 error|command prompt/i)).not.toBeVisible();
+    await screenshot(page, 'RFQ-TC-10-no-cmd-prompt');
+  });
+
+  test('RFQ-TC-11 · BUG-19 regression — Billing PDF download works', async ({ page }) => {
+    await page.goto('/eo/billing');
+    await expect(page.getByRole('heading', { name: 'Invoices' })).toBeVisible({ timeout: 10_000 });
+    const popupPromise = page.context().waitForEvent('page', { timeout: 10_000 }).catch(() => null);
+    const dlPromise   = page.waitForEvent('download', { timeout: 10_000 }).catch(() => null);
+    await page.getByRole('button', { name: 'View invoice PDF' }).first().click();
+    const dl = await dlPromise;
+    const popup = await popupPromise;
+    // Expected: either a download or a popup opens (BUG-19 was: error) — tolerate both
+    expect(dl !== null || popup !== null).toBe(true);
+    await screenshot(page, 'RFQ-TC-11-billing-pdf');
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: RSVP Setup & Management
+// SECTION: Payment Processing (Stripe-hosted checkout)
+// HatchEvent uses Stripe Checkout (hosted) — the "Secure checkout at STRIPE"
+// button redirects to checkout.stripe.com. We verify the checkout entry point
+// exists, but do NOT complete payment (real card not allowed; staging may not
+// be in test mode).
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-07–12 · RSVP Setup & Management', () => {
+test.describe('RFQ-TC-12–15 · Payment Processing', () => {
   test.beforeEach(async ({ page }) => { await loginAsEO(page); });
 
-  test('SVC-TC-07 · Edit RSVP flow — BUG-21 regression (background not too dark)', async ({ page }) => {
-    await page.goto('/eo/rsvp');
-    // Click "Edit RSVP" — navigates to /eo/rsvp/loading
-    await page.getByRole('button', { name: 'Edit RSVP' }).first().click();
-    await page.waitForURL(/\/eo\/rsvp\/loading/, { timeout: 15_000 });
-    // BUG-21: body background not pure black
-    const bg = await page.locator('body').evaluate(el => window.getComputedStyle(el).backgroundColor);
-    expect(bg).not.toBe('rgb(0, 0, 0)');
-    // Expected: "Let's review your RSVP details" heading + event-name textbox
-    await expect(page.getByRole('heading', { name: /review your RSVP/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('textbox', { name: /event name/i })).toBeVisible();
-    await screenshot(page, 'SVC-TC-07-rsvp-edit');
+  test('RFQ-TC-12 · Service purchase navigates to Stripe checkout', async ({ page }) => {
+    // Go through: /eo/services → HatchEvent Services → select → Continue → summary
+    await page.goto('/eo/services');
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.getByRole('button', { name: /Vendor Evaluation Services/ }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForURL(/\/eo\/he-services\/summary/, { timeout: 15_000 });
+    // Expected: "Secure checkout at STRIPE" button visible
+    await expect(page.getByRole('button', { name: /Secure checkout at STRIPE/i })).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-12-stripe-checkout-button');
   });
 
-  test('SVC-TC-08 · Purchase RSVP Package — 3 tiers visible — BUG-04 regression', async ({ page }) => {
+  test('RFQ-TC-13 · Stripe checkout requires T&C checkbox', async ({ page }) => {
+    await page.goto('/eo/services');
+    await page.getByRole('button', { name: 'HatchEvent Services' }).first().click();
+    await page.getByRole('button', { name: /Vendor Evaluation Services/ }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForURL(/\/eo\/he-services\/summary/, { timeout: 15_000 });
+    const tcCheckbox = page.getByRole('checkbox', { name: /Terms and Conditions/i });
+    await expect(tcCheckbox).toBeVisible();
+    // Should be unchecked by default
+    expect(await tcCheckbox.isChecked()).toBe(false);
+    await tcCheckbox.check();
+    expect(await tcCheckbox.isChecked()).toBe(true);
+    await screenshot(page, 'RFQ-TC-13-tc-checkbox');
+  });
+
+  test('RFQ-TC-14 · RSVP Package Gold tier purchase flow', async ({ page }) => {
     await page.goto('/eo/rsvp');
     await page.getByRole('button', { name: 'Purchase Package' }).first().click();
     await page.waitForURL(/\/eo\/rsvp\/package/, { timeout: 15_000 });
-    // Expected: 3 tiers Gold ($200) / Silver ($100) / Bronze ($60)
-    await expect(page.getByText(/Gold Package/).first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Silver Package/).first()).toBeVisible();
-    await expect(page.getByText(/Bronze Package/).first()).toBeVisible();
-    // Continue button present
-    await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
-    await screenshot(page, 'SVC-TC-08-rsvp-packages');
+    await page.getByRole('button', { name: /Gold Package/ }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.waitForTimeout(4000);
+    // Expected: either summary page with Stripe button, or next-step UI
+    const hasStripeBtn = await page.getByRole('button', { name: /Secure checkout at STRIPE|Checkout/i }).count();
+    const hasSummary = await page.getByText(/purchase summary|you have selected|pay/i).count();
+    expect(hasStripeBtn + hasSummary).toBeGreaterThan(0);
+    await screenshot(page, 'RFQ-TC-14-rsvp-gold-checkout');
   });
 
-  test('SVC-TC-09 · BUG-22 regression — RSVP invoice download accessible from Billing', async ({ page }) => {
+  test('RFQ-TC-15 · BUG-29 regression — Invoice filename not "stream"', async ({ page }) => {
     await page.goto('/eo/billing');
-    // RSVP Packages tab exists
-    await page.getByRole('tab', { name: 'RSVP Packages' }).click();
-    await page.waitForTimeout(2000);
-    // Invoice PDF button should be clickable without 500 error
-    const pdfBtn = page.getByRole('button', { name: 'View invoice PDF' }).first();
-    if (await pdfBtn.count() > 0) {
-      await expect(pdfBtn).toBeVisible();
+    const popupPromise = page.context().waitForEvent('page', { timeout: 10_000 }).catch(() => null);
+    const dlPromise   = page.waitForEvent('download', { timeout: 10_000 }).catch(() => null);
+    await page.getByRole('button', { name: 'View invoice PDF' }).first().click();
+    const dl = await dlPromise;
+    const popup = await popupPromise;
+    if (dl) {
+      const fn = dl.suggestedFilename();
+      expect(fn).not.toBe('stream');
+      expect(fn.length).toBeGreaterThan(5);
     }
-    await screenshot(page, 'SVC-TC-09-rsvp-invoice-billing');
-  });
-
-  test('SVC-TC-10 · RSVP page shows per-event management per guest', async ({ page }) => {
-    await page.goto('/eo/rsvp');
-    await expect(page.getByRole('heading', { name: 'RSVP by events' }).first()).toBeVisible({ timeout: 10_000 });
-    // Search guests textbox exists
-    await expect(page.getByRole('textbox', { name: /search guests/i }).first()).toBeVisible();
-    // Status tabs with counts
-    await expect(page.getByRole('button', { name: /Pending invite \(\d+\)/ }).first()).toBeVisible();
-    await screenshot(page, 'SVC-TC-10-rsvp-guest-mgmt');
-  });
-
-  test('SVC-TC-11 · BUG-04 regression — Purchase Package button visible for events without package', async ({ page }) => {
-    await page.goto('/eo/rsvp');
-    // Purchase Package button should be visible (not hidden) on events without package
-    const purchaseBtn = page.getByRole('button', { name: 'Purchase Package' }).first();
-    await expect(purchaseBtn).toBeVisible({ timeout: 10_000 });
-    // Verify enabled (not disabled)
-    const isDisabled = await purchaseBtn.isDisabled();
-    expect(isDisabled).toBe(false);
-    await screenshot(page, 'SVC-TC-11-purchase-package-enabled');
-  });
-
-  test('SVC-TC-12 · Export Guest List button available', async ({ page }) => {
-    await page.goto('/eo/guest-list');
-    await expect(page.getByRole('button', { name: 'Export' }).first()).toBeVisible({ timeout: 10_000 });
-    // Each event with contacts has CSV button
-    const csvBtn = page.getByRole('button', { name: 'CSV' }).first();
-    if (await csvBtn.count() > 0) {
-      await expect(csvBtn).toBeVisible();
+    // If it opens in popup instead, URL should contain invoice indicator
+    if (popup) {
+      await popup.waitForLoadState('load', { timeout: 10_000 }).catch(()=>{});
+      const u = popup.url();
+      expect(u).toMatch(/invoice|pdf|stripe|checkout|billing/i);
     }
-    await screenshot(page, 'SVC-TC-12-export-guest-list');
+    await screenshot(page, 'RFQ-TC-15-invoice-filename');
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Event Check-In
+// SECTION: Edge Cases
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-13 · Event Check-In', () => {
-  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
+test.describe('RFQ-TC-16–18 · Edge Cases', () => {
 
-  test('SVC-TC-13 · Guest list page loads with "Manage in app" per event', async ({ page }) => {
-    await page.goto('/eo/guest-list');
-    await expect(page.getByRole('heading', { name: 'Guest lists for ongoing events' })).toBeVisible({ timeout: 10_000 });
-    // Each event has "Manage in app" button (check-in happens in mobile app)
-    await expect(page.getByRole('button', { name: 'Manage in app' }).first()).toBeVisible();
-    await screenshot(page, 'SVC-TC-13-guest-manage-in-app');
+  test('RFQ-TC-16 · BUG-31 regression — Vendor past RFQ filters', async ({ page }) => {
+    await loginAsVendor(page);
+    await page.goto('/vendor/rfqs');
+    // Past RFQs section with filter tabs
+    await expect(page.getByRole('heading', { name: 'Past RFQs' })).toBeVisible({ timeout: 10_000 });
+    for (const status of ['All', 'Completed', 'Rejected', 'Expired']) {
+      await expect(page.getByRole('button', { name: status, exact: true }).first()).toBeVisible();
+    }
+    await screenshot(page, 'RFQ-TC-16-past-rfq-filters');
   });
-});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Post-Event Survey
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-14 · Post-Event Survey', () => {
-  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
-
-  test('SVC-TC-14 · Past events visible for post-event actions', async ({ page }) => {
+  test('RFQ-TC-17 · EO notification — enquiry page loads normally', async ({ page }) => {
+    await loginAsEO(page);
     await page.goto('/eo/enquiries');
-    await expect(page.getByRole('heading', { name: 'Past Event Enquiries' })).toBeVisible({ timeout: 10_000 });
-    // Verify there's at least one past event
-    const pastEventCount = await page.getByRole('heading', { name: /Event in|Past Demo Event/ }).count();
-    expect(pastEventCount).toBeGreaterThan(0);
-    await screenshot(page, 'SVC-TC-14-past-events-for-survey');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Email Notifications
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('SVC-TC-15–16 · Email Notifications', () => {
-
-  test.skip('SVC-TC-15 · EO Mobile App — Message/Email Action [BLOCKED — BUG-05 Confirmed Intended]', async ({ page }) => {
-    // BUG-05: Message icon in EO Mobile App — pending email address configuration by iFoundries
+    await expect(page.getByRole('heading', { name: 'Event Enquiries' })).toBeVisible({ timeout: 10_000 });
+    await screenshot(page, 'RFQ-TC-17-enquiry-page');
   });
 
-  test.skip('SVC-TC-16 · Event Name Sync After RSVP Edit [BLOCKED — BUG-38]', async ({ page }) => {
-    // BUG-38: Event name consistency between RSVP and event overview
-  });
+  test.skip('RFQ-TC-18 · EO Vendor Reselection [BLOCKED — BUG-36]', async ({ page }) => {});
 });

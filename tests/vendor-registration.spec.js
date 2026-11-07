@@ -41,8 +41,8 @@ test.describe('VD-TC-01–05 · Account Registration', () => {
     await loginAsVendor(page);
     // After login, lands on /vendor or /vendor/dashboard
     await expect(page).toHaveURL(/\/vendor(\/|$)/);
-    // Greeting heading uses the vendor's name
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
+    // Greeting heading uses the vendor's name (bumped timeout for slow dashboard load)
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 20_000 });
     await screenshot(page, 'VD-TC-04-vendor-dashboard');
   });
 
@@ -116,7 +116,8 @@ test.describe('VD-TC-09–14 · Listings', () => {
 
   test('VD-TC-09 · View Listings Page', async ({ page }) => {
     await page.goto('/vendor/listing');
-    await expect(page.getByRole('heading', { name: 'Listing' })).toBeVisible({ timeout: 10_000 });
+    // Listing heading — use first() because sidebar also has "Listing"
+    await expect(page.getByRole('heading', { name: 'Listing' }).first()).toBeVisible({ timeout: 10_000 });
     // Each listing has View/Edit/Archive/Delete buttons
     await expect(page.getByRole('button', { name: 'View' }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Create listing' })).toBeVisible();

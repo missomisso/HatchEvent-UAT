@@ -1,5 +1,7 @@
 # HatchEvent — Playwright UAT Suite
 
+Live website: https://missomisso.github.io/HatchEvent-UAT/
+
 Automated UAT runner for the HatchEvent portal.  
 Covers **91 test cases** across 4 journeys and writes Pass/Fail results back into the Excel tracker automatically.
 
@@ -193,4 +195,4 @@ pip install openpyxl --break-system-packages
 ```
 
 ### Stripe payment tests
-Tests that go through Stripe (RFQ-TC-12, RFQ-TC-13, SVC-TC-08) use the test card `4242 4242 4242 4242`. This only works if the staging Stripe integration is in **test mode**. If staging is wired to a live Stripe key, those tests will fail — mark them Blocked manually.
+Tests that go through Stripe (RFQ-TC-12, RFQ-TC-13, SVC-TC-08) use the test card `4242 4242 4242 4242`. This only works if the staging Stripe integration is in **test mode**. If staging is wired [...]

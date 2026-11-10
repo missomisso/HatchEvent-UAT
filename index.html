@@ -26,6 +26,7 @@
         <nav class="nav-links" aria-label="Main navigation">
           <a href="#overview">Overview</a>
           <a href="#coverage">Coverage</a>
+          <a href="#steps">Steps</a>
           <a href="#setup">Setup</a>
           <a href="#run">Run</a>
         </nav>
@@ -159,7 +160,38 @@
         </div>
       </section>
 
-      <section id="setup" class="section">
+      <section id="steps" class="section">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Test steps</p>
+            <h2>How each UAT run is executed.</h2>
+          </div>
+          <div class="steps-grid">
+            <article class="step-card">
+              <span class="step-number">01</span>
+              <h3>Prepare the environment</h3>
+              <p>Set up the staging credentials, confirm the correct base URL, and ensure the EO and Vendor accounts are ready.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">02</span>
+              <h3>Launch the journey</h3>
+              <p>Run the relevant Playwright flow for EO, Vendor, RFQ, or Event Service to begin the automated execution.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">03</span>
+              <h3>Validate each scenario</h3>
+              <p>Every case checks the critical actions, expected screens, and validation states before marking Pass or Fail.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-number">04</span>
+              <h3>Report back to tracker</h3>
+              <p>Results are written to the Excel tracker with the outcome, date, and any failure notes for quick UAT review.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="setup" class="section alt">
         <div class="container split">
           <div>
             <p class="eyebrow">Setup</p>
@@ -183,7 +215,7 @@
         </div>
       </section>
 
-      <section id="run" class="section alt">
+      <section id="run" class="section">
         <div class="container split">
           <div>
             <p class="eyebrow">Run</p>

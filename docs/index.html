@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="HatchEvent UAT dashboard for coverage and recent runs." />
   <title>HatchEvent UAT Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=brand-20261111" />
+  <link rel="stylesheet" href="styles.css?v=brand-20261111-v2" />
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -40,17 +40,11 @@
           <p class="intro">
             A live view of HatchEvent's user acceptance testing. Track coverage, validate each critical user flow, and monitor the latest automated runs across staging.
           </p>
-
           <div class="hero-actions">
-            <a class="button primary" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">
-              ▶ RUN UAT TESTS
-            </a>
-            <a class="button secondary" href="https://github.com/missomisso/HatchEvent-UAT/blob/main/README.md">
-              READ TEST GUIDE →
-            </a>
+            <a class="button primary" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">▶ RUN UAT TESTS</a>
+            <a class="button secondary" href="https://github.com/missomisso/HatchEvent-UAT/blob/main/README.md">READ TEST GUIDE →</a>
           </div>
         </div>
-
         <div class="seal" aria-label="91 test cases covered">
           <small>AUTOMATED COVERAGE</small>
           <strong>91</strong>
@@ -60,90 +54,35 @@
     </section>
 
     <section class="metrics" aria-label="Test suite summary">
-      <article>
-        <small>TOTAL TEST CASES</small>
-        <strong>91</strong>
-        <span>Across all journeys</span>
-      </article>
-      <article>
-        <small>JOURNEYS COVERED</small>
-        <strong>4</strong>
-        <span>Core UAT flows</span>
-      </article>
-      <article>
-        <small>KNOWN SKIPPED</small>
-        <strong>12</strong>
-        <span>Open issues tracked</span>
-      </article>
-      <article>
-        <small>LATEST AUTOMATION</small>
-        <strong id="latest-status">LOADING</strong>
-        <span id="latest-note">Checking GitHub Actions…</span>
-      </article>
+      <article><small>TOTAL TEST CASES</small><strong>91</strong><span>Across all journeys</span></article>
+      <article><small>JOURNEYS COVERED</small><strong>4</strong><span>Core UAT flows</span></article>
+      <article><small>KNOWN SKIPPED</small><strong>12</strong><span>Open issues tracked</span></article>
+      <article><small>LATEST AUTOMATION</small><strong id="latest-status">LOADING</strong><span id="latest-note">Checking GitHub Actions…</span></article>
     </section>
 
     <section class="section">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">TEST SUITE</p>
-          <h2>Journey coverage<span>.</span></h2>
-        </div>
-      </div>
-
+      <div class="section-header"><div><p class="eyebrow">TEST SUITE</p><h2>Journey coverage<span>.</span></h2></div></div>
       <div class="journeys">
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/eo-journey.spec.js">
-          <b>01</b>
-          <span><strong>Event organiser</strong><small>Events, quotations, deposits &amp; RSVP</small></span>
-          <strong class="count">31 <small>CASES</small></strong>
-        </a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/vendor-registration.spec.js">
-          <b>02</b>
-          <span><strong>Vendor registration</strong><small>Registration, profile &amp; listings</small></span>
-          <strong class="count">26 <small>CASES</small></strong>
-        </a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/rfq-process.spec.js">
-          <b>03</b>
-          <span><strong>RFQ process</strong><small>Requests for quotation &amp; bidding</small></span>
-          <strong class="count">18 <small>CASES</small></strong>
-        </a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/event-service.spec.js">
-          <b>04</b>
-          <span><strong>Event service &amp; RSVP</strong><small>Service delivery &amp; attendee responses</small></span>
-          <strong class="count">16 <small>CASES</small></strong>
-        </a>
+        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/eo-journey.spec.js"><b>01</b><span><strong>Event organiser</strong><small>Events, quotations, deposits &amp; RSVP</small></span><strong class="count">31 <small>CASES</small></strong></a>
+        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/vendor-registration.spec.js"><b>02</b><span><strong>Vendor registration</strong><small>Registration, profile &amp; listings</small></span><strong class="count">26 <small>CASES</small></strong></a>
+        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/rfq-process.spec.js"><b>03</b><span><strong>RFQ process</strong><small>Requests for quotation &amp; bidding</small></span><strong class="count">18 <small>CASES</small></strong></a>
+        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/event-service.spec.js"><b>04</b><span><strong>Event service &amp; RSVP</strong><small>Service delivery &amp; attendee responses</small></span><strong class="count">16 <small>CASES</small></strong></a>
       </div>
-
       <p class="note">79 active automated checks / 12 intentionally skipped while known issues are investigated.</p>
     </section>
 
     <section class="section">
-      <div class="section-header table-header">
-        <div>
-          <p class="eyebrow">CONTINUOUS TESTING</p>
-          <h2>Recent runs<span>.</span></h2>
-        </div>
-        <button id="refresh" type="button">↻ REFRESH</button>
-      </div>
-
+      <div class="section-header table-header"><div><p class="eyebrow">CONTINUOUS TESTING</p><h2>Recent runs<span>.</span></h2></div><button id="refresh" type="button">↻ REFRESH</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>RESULT</th><th>WORKFLOW</th><th>TRIGGER</th><th>WHEN</th><th></th></tr></thead>
           <tbody id="runs"><tr><td colspan="5" class="placeholder">Loading runs from GitHub…</td></tr></tbody>
         </table>
       </div>
-
-      <p class="table-foot">
-        <span>● LIVE FROM GITHUB ACTIONS</span>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">ALL WORKFLOW RUNS ↗</a>
-      </p>
+      <p class="table-foot"><span>● LIVE FROM GITHUB ACTIONS</span><a href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">ALL WORKFLOW RUNS ↗</a></p>
     </section>
   </main>
 
-  <footer>
-    <div class="footer-inner">
-      <a class="footer-brand" href="https://github.com/missomisso/HatchEvent-UAT">Hatch<span>Event</span></a>
-      <span>POWERED BY PLAYWRIGHT &amp; GITHUB ACTIONS</span>
-    </div>
-  </footer>
+  <footer><div class="footer-inner"><a class="footer-brand" href="https://github.com/missomisso/HatchEvent-UAT">Hatch<span>Event</span></a><span>POWERED BY PLAYWRIGHT &amp; GITHUB ACTIONS</span></div></footer>
 </body>
 </html>

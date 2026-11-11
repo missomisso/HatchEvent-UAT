@@ -10,35 +10,42 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="https://github.com/missomisso/HatchEvent-UAT">
-      HatchEvent <span>/ UAT</span>
-    </a>
-    <a class="repo-link" href="https://github.com/missomisso/HatchEvent-UAT">
-      VIEW REPOSITORY ↗
-    </a>
+    <div class="topbar-inner">
+      <a class="brand" href="https://github.com/missomisso/HatchEvent-UAT" aria-label="HatchEvent UAT home">
+        <span class="brand-mark">H</span>
+        <span class="brand-text">HatchEvent <em>/ UAT</em></span>
+      </a>
+      <a class="repo-link" href="https://github.com/missomisso/HatchEvent-UAT">
+        VIEW REPOSITORY ↗
+      </a>
+    </div>
   </header>
 
   <main>
     <section class="hero">
-      <p class="eyebrow">TEST OPERATIONS / HATCH EVENT</p>
-      <h1>Confidence in<br>every <span>journey.</span></h1>
-      <p class="intro">
-        A live view of HatchEvent's user acceptance testing. Check the test coverage and recent automation runs.
-      </p>
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">TEST OPERATIONS / HATCH EVENT</p>
+          <h1>Confidence in<br>every <span>journey.</span></h1>
+          <p class="intro">
+            A live view of HatchEvent's user acceptance testing. Track coverage, validate each critical user flow, and monitor the latest automated runs across staging.
+          </p>
 
-      <div class="hero-actions">
-        <a class="button" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">
-          ▶ &nbsp; RUN UAT TESTS
-        </a>
-        <a class="link" href="https://github.com/missomisso/HatchEvent-UAT/blob/main/README.md">
-          Read test guide →
-        </a>
-      </div>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">
+              ▶ RUN UAT TESTS
+            </a>
+            <a class="button secondary" href="https://github.com/missomisso/HatchEvent-UAT/blob/main/README.md">
+              READ TEST GUIDE →
+            </a>
+          </div>
+        </div>
 
-      <div class="seal">
-        <small>AUTOMATED COVERAGE</small>
-        <strong>91</strong>
-        <small>TEST CASES</small>
+        <div class="seal" aria-label="91 test cases covered">
+          <small>AUTOMATED COVERAGE</small>
+          <strong>91</strong>
+          <small>TEST CASES</small>
+        </div>
       </div>
     </section>
 
@@ -51,12 +58,12 @@
       <article>
         <small>JOURNEYS COVERED</small>
         <strong>4</strong>
-        <span>UAT flows</span>
+        <span>Core UAT flows</span>
       </article>
       <article>
         <small>KNOWN SKIPPED</small>
         <strong>12</strong>
-        <span>Known open bugs</span>
+        <span>Open issues tracked</span>
       </article>
       <article>
         <small>LATEST AUTOMATION</small>
@@ -66,8 +73,12 @@
     </section>
 
     <section class="section">
-      <p class="eyebrow">TEST SUITE</p>
-      <h2>Journey coverage<span>.</span></h2>
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">TEST SUITE</p>
+          <h2>Journey coverage<span>.</span></h2>
+        </div>
+      </div>
 
       <div class="journeys">
         <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/eo-journey.spec.js">
@@ -113,7 +124,7 @@
     </section>
 
     <section class="section">
-      <div class="section-title">
+      <div class="section-header table-header">
         <div>
           <p class="eyebrow">CONTINUOUS TESTING</p>
           <h2>Recent runs<span>.</span></h2>
@@ -150,8 +161,10 @@
   </main>
 
   <footer>
-    <strong>HATCHEVENT <span>UAT</span></strong>
-    <span>POWERED BY PLAYWRIGHT &amp; GITHUB ACTIONS</span>
+    <div class="footer-inner">
+      <strong>HATCHEVENT <span>UAT</span></strong>
+      <span>POWERED BY PLAYWRIGHT &amp; GITHUB ACTIONS</span>
+    </div>
   </footer>
 </body>
 </html>

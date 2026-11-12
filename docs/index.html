@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Live HatchEvent UAT testing updates from GitHub Actions." />
   <title>HatchEvent UAT — Testing Updates</title>
-  <link rel="stylesheet" href="styles.css?v=testing-updates-20261112" />
+  <link rel="stylesheet" href="styles.css?v=testing-updates-20261112-v2" />
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -16,20 +16,53 @@
     </div>
   </header>
 
-  <main>
+  <main class="dashboard">
     <section class="page-heading">
       <p class="eyebrow">TESTING ACTIVITY</p>
       <h1>UAT run updates</h1>
       <p>Latest automated test status and recent runs, loaded directly from GitHub Actions.</p>
     </section>
 
+    <section class="summary-grid" aria-label="UAT summary">
+      <article class="summary-card success">
+        <span class="label">PASSED</span>
+        <strong id="stat-passed">0</strong>
+        <small>Recent runs</small>
+      </article>
+      <article class="summary-card failure">
+        <span class="label">FAILED</span>
+        <strong id="stat-failed">0</strong>
+        <small>Needs attention</small>
+      </article>
+      <article class="summary-card warning">
+        <span class="label">RUNNING</span>
+        <strong id="stat-running">0</strong>
+        <small>In progress</small>
+      </article>
+      <article class="summary-card neutral">
+        <span class="label">CANCELLED</span>
+        <strong id="stat-cancelled">0</strong>
+        <small>Stopped</small>
+      </article>
+    </section>
+
     <section class="latest" aria-labelledby="latest-heading">
-      <div>
+      <div class="latest-copy">
         <p class="eyebrow" id="latest-heading">LATEST RUN</p>
         <strong id="latest-status" class="latest-status">LOADING</strong>
         <p id="latest-note" class="muted">Checking GitHub Actions…</p>
       </div>
       <a class="button" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">View all test runs ↗</a>
+    </section>
+
+    <section class="failure-panel" aria-labelledby="failure-heading">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow" id="failure-heading">LATEST FAILURE</p>
+          <h2>Failure watch</h2>
+        </div>
+      </div>
+      <div id="failure-summary" class="failure-summary">Checking latest failed run…</div>
     </section>
 
     <section class="section" aria-labelledby="runs-heading">

@@ -3,86 +3,73 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="HatchEvent UAT dashboard for coverage and recent runs." />
-  <title>HatchEvent UAT Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=brand-20261111-v2" />
+  <meta name="description" content="Live HatchEvent UAT testing updates from GitHub Actions." />
+  <title>HatchEvent UAT — Testing Updates</title>
+  <link rel="stylesheet" href="styles.css?v=testing-updates-20261112" />
   <script src="app.js" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand-lockup" href="https://github.com/missomisso/HatchEvent-UAT" aria-label="HatchEvent — Bringing Events to Life">
-        <svg class="brand-symbol" viewBox="0 0 80 80" role="img" aria-hidden="true">
-          <circle cx="40" cy="40" r="39" fill="#E69B2D" />
-          <path d="M17 43c0-4 3-7 7-7h4c1-10 9-18 20-18 9 0 16 6 19 14l5 2-4 4c1 2 2 5 2 8 0 13-10 23-23 23H36c-11 0-19-9-19-20v-6Z" fill="#FFCF01" />
-          <path d="M25 35c1-9 7-16 15-19l-1 9 7-10 3 11 8-7 1 11" fill="#FFCF01" />
-          <ellipse cx="39" cy="43" rx="2.3" ry="3.2" fill="#231F20" />
-          <ellipse cx="56" cy="43" rx="2.3" ry="3.2" fill="#231F20" />
-          <path d="m45 48 7 3-7 3-3-3 3-3Z" fill="#E69B2D" />
-        </svg>
-        <span class="brand-copy">
-          <span class="brand-name"><span>Hatch</span><span class="brand-name-accent">Event</span></span>
-          <span class="brand-tagline">Bringing Events to Life</span>
-        </span>
-      </a>
-      <a class="repo-link" href="https://github.com/missomisso/HatchEvent-UAT">
-        VIEW REPOSITORY ↗
-      </a>
+      <a class="brand" href="https://github.com/missomisso/HatchEvent-UAT">HatchEvent <span>UAT</span></a>
+      <a class="repo-link" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">OPEN TEST WORKFLOW ↗</a>
     </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-grid">
+    <section class="page-heading">
+      <p class="eyebrow">TESTING ACTIVITY</p>
+      <h1>UAT run updates</h1>
+      <p>Latest automated test status and recent runs, loaded directly from GitHub Actions.</p>
+    </section>
+
+    <section class="latest" aria-labelledby="latest-heading">
+      <div>
+        <p class="eyebrow" id="latest-heading">LATEST RUN</p>
+        <strong id="latest-status" class="latest-status">LOADING</strong>
+        <p id="latest-note" class="muted">Checking GitHub Actions…</p>
+      </div>
+      <a class="button" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">View all test runs ↗</a>
+    </section>
+
+    <section class="section" aria-labelledby="runs-heading">
+      <div class="section-header">
         <div>
-          <p class="eyebrow">TEST OPERATIONS / HATCH EVENT</p>
-          <h1>Confidence in<br>every <span>journey.</span></h1>
-          <p class="intro">
-            A live view of HatchEvent's user acceptance testing. Track coverage, validate each critical user flow, and monitor the latest automated runs across staging.
-          </p>
-          <div class="hero-actions">
-            <a class="button primary" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">▶ RUN UAT TESTS</a>
-            <a class="button secondary" href="https://github.com/missomisso/HatchEvent-UAT/blob/main/README.md">READ TEST GUIDE →</a>
-          </div>
+          <p class="eyebrow">RUN HISTORY</p>
+          <h2 id="runs-heading">Recent testing updates</h2>
         </div>
-        <div class="seal" aria-label="91 test cases covered">
-          <small>AUTOMATED COVERAGE</small>
-          <strong>91</strong>
-          <small>TEST CASES</small>
-        </div>
+        <button id="refresh" type="button">↻ Refresh</button>
       </div>
-    </section>
-
-    <section class="metrics" aria-label="Test suite summary">
-      <article><small>TOTAL TEST CASES</small><strong>91</strong><span>Across all journeys</span></article>
-      <article><small>JOURNEYS COVERED</small><strong>4</strong><span>Core UAT flows</span></article>
-      <article><small>KNOWN SKIPPED</small><strong>12</strong><span>Open issues tracked</span></article>
-      <article><small>LATEST AUTOMATION</small><strong id="latest-status">LOADING</strong><span id="latest-note">Checking GitHub Actions…</span></article>
-    </section>
-
-    <section class="section">
-      <div class="section-header"><div><p class="eyebrow">TEST SUITE</p><h2>Journey coverage<span>.</span></h2></div></div>
-      <div class="journeys">
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/eo-journey.spec.js"><b>01</b><span><strong>Event organiser</strong><small>Events, quotations, deposits &amp; RSVP</small></span><strong class="count">31 <small>CASES</small></strong></a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/vendor-registration.spec.js"><b>02</b><span><strong>Vendor registration</strong><small>Registration, profile &amp; listings</small></span><strong class="count">26 <small>CASES</small></strong></a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/rfq-process.spec.js"><b>03</b><span><strong>RFQ process</strong><small>Requests for quotation &amp; bidding</small></span><strong class="count">18 <small>CASES</small></strong></a>
-        <a href="https://github.com/missomisso/HatchEvent-UAT/blob/main/tests/event-service.spec.js"><b>04</b><span><strong>Event service &amp; RSVP</strong><small>Service delivery &amp; attendee responses</small></span><strong class="count">16 <small>CASES</small></strong></a>
-      </div>
-      <p class="note">79 active automated checks / 12 intentionally skipped while known issues are investigated.</p>
-    </section>
-
-    <section class="section">
-      <div class="section-header table-header"><div><p class="eyebrow">CONTINUOUS TESTING</p><h2>Recent runs<span>.</span></h2></div><button id="refresh" type="button">↻ REFRESH</button></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>RESULT</th><th>WORKFLOW</th><th>TRIGGER</th><th>WHEN</th><th></th></tr></thead>
-          <tbody id="runs"><tr><td colspan="5" class="placeholder">Loading runs from GitHub…</td></tr></tbody>
+          <thead>
+            <tr><th>RESULT</th><th>RUN</th><th>TRIGGER</th><th>LAST UPDATED</th><th></th></tr>
+          </thead>
+          <tbody id="runs">
+            <tr><td colspan="5" class="placeholder">Loading runs from GitHub…</td></tr>
+          </tbody>
         </table>
       </div>
-      <p class="table-foot"><span>● LIVE FROM GITHUB ACTIONS</span><a href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">ALL WORKFLOW RUNS ↗</a></p>
+      <p class="table-foot"><span>Updates are fetched from the public GitHub Actions run history.</span><a href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">Open workflow ↗</a></p>
     </section>
+
+    <section class="details" aria-labelledby="suite-heading">
+      <div>
+        <p class="eyebrow">TEST SUITE</p>
+        <h2 id="suite-heading">What is covered</h2>
+        <p class="muted">91 UAT cases across four HatchEvent journeys. Twelve known cases are intentionally skipped while their related issues are investigated.</p>
+      </div>
+      <ul class="coverage-list">
+        <li><span>Event organiser</span><strong>31 cases</strong></li>
+        <li><span>Vendor registration</span><strong>26 cases</strong></li>
+        <li><span>RFQ process</span><strong>18 cases</strong></li>
+        <li><span>Event service &amp; RSVP</span><strong>16 cases</strong></li>
+      </ul>
+    </section>
+
+    <p class="schedule-note">Automated runs are scheduled Monday–Friday at 03:00 Singapore time. You can also start a run manually from the workflow page.</p>
   </main>
 
-  <footer><div class="footer-inner"><a class="footer-brand" href="https://github.com/missomisso/HatchEvent-UAT">Hatch<span>Event</span></a><span>POWERED BY PLAYWRIGHT &amp; GITHUB ACTIONS</span></div></footer>
+  <footer><div class="footer-inner"><span>HatchEvent UAT testing updates</span><a href="https://github.com/missomisso/HatchEvent-UAT">Repository</a></div></footer>
 </body>
 </html>

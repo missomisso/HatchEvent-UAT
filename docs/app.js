@@ -1,6 +1,6 @@
 const owner = 'missomisso';
 const repo = 'HatchEvent-UAT';
-const apiUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/uat.yml/runs?per_page=6`;
+const apiUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/uat.yml/runs?per_page=10`;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => {
@@ -67,22 +67,23 @@ function renderRuns(runs) {
   const first = runs[0];
   const [label, cls] = statusInfo(first);
   latestStatus.textContent = label;
-  latestStatus.style.color = cls === 'success' ? '#c8f169' : cls === 'running' ? '#ffc36a' : '#ff8980';
-  latestNote.textContent = `#${first.run_number} · ${timeAgo(first.updated_at || first.created_at)}`;
+  latestStatus.className = `latest-status ${cls}`;
+  latestNote.textContent = `Run #${first.run_number} · ${timeAgo(first.updated_at || first.created_at)}`;
 
   tbody.innerHTML = runs.map((run) => {
     const [stateLabel, stateClass] = statusInfo(run);
+    const runTitle = run.display_title || run.name || 'HatchEvent UAT';
 
     return `
       <tr>
         <td><span class="result ${stateClass}">● ${stateLabel}</span></td>
         <td>
-          <span class="run-name">HatchEvent UAT</span><br />
+          <span class="run-name">${escapeHtml(runTitle)}</span><br />
           <span class="run-date">#${escapeHtml(run.run_number)}</span>
         </td>
         <td class="run-date">${escapeHtml(triggerLabel(run))}</td>
         <td class="run-date">${escapeHtml(timeAgo(run.updated_at || run.created_at))}</td>
-        <td class="open"><a href="${escapeHtml(run.html_url)}" aria-label="Open workflow run">↗</a></td>
+        <td class="open"><a href="${escapeHtml(run.html_url)}" aria-label="Open workflow run ${escapeHtml(run.run_number)}">View ↗</a></td>
       </tr>
     `;
   }).join('');
@@ -110,11 +111,12 @@ async function loadRuns() {
       <tr>
         <td colspan="5" class="placeholder">
           Unable to load workflow runs.
-          <a href="https://github.com/${owner}/${repo}/actions/workflows/uat.yml" style="color:#c8f169;">View on GitHub ↗</a>
+          <a href="https://github.com/${owner}/${repo}/actions/workflows/uat.yml">View runs on GitHub ↗</a>
         </td>
       </tr>
     `;
     document.querySelector('#latest-status').textContent = 'UNAVAILABLE';
+    document.querySelector('#latest-status').className = 'latest-status failure';
     document.querySelector('#latest-note').textContent = 'GitHub Actions could not be reached';
     console.error(error);
   } finally {

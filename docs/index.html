@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Live HatchEvent UAT testing updates from GitHub Actions." />
   <title>HatchEvent UAT — Testing Updates</title>
-  <link rel="stylesheet" href="styles.css?v=testing-updates-20261112-v2" />
+  <link rel="stylesheet" href="styles.css?v=testing-updates-20261112-v3" />
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -53,6 +53,16 @@
         <p id="latest-note" class="muted">Checking GitHub Actions…</p>
       </div>
       <a class="button" href="https://github.com/missomisso/HatchEvent-UAT/actions/workflows/uat.yml">View all test runs ↗</a>
+    </section>
+
+    <section class="trend-panel" aria-labelledby="trend-heading">
+      <div class="section-header compact">
+        <div>
+          <p class="eyebrow" id="trend-heading">TREND</p>
+          <h2>Last 6 runs</h2>
+        </div>
+      </div>
+      <div id="trend-chart" class="trend-chart" aria-label="Recent UAT run trend"></div>
     </section>
 
     <section class="failure-panel" aria-labelledby="failure-heading">

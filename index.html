@@ -1,252 +1,71 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content="0; url=./docs/" />
     <title>HatchEvent UAT</title>
     <meta
       name="description"
-      content="HatchEvent UAT — automated quality assurance suite for the HatchEvent portal."
+      content="Redirecting to the current HatchEvent UAT testing dashboard."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07131f;
+        --panel: #0d1f2d;
+        --accent: #1ec7a6;
+        --text: #edf6ff;
+        --muted: #a7bccd;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #123a53, var(--bg) 48%);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", sans-serif;
+      }
+      .card {
+        background: rgba(13, 31, 45, 0.9);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        padding: 2rem 2.25rem;
+        text-align: center;
+        box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.38rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(30, 199, 166, 0.12);
+        color: var(--accent);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      p {
+        margin: 0.65rem 0 0;
+        color: var(--muted);
+      }
+    </style>
   </head>
   <body>
-    <header class="topbar">
-      <div class="container nav">
-        <div class="brand">
-          <span class="brand-mark">H</span>
-          <span>HatchEvent</span>
-        </div>
-        <nav class="nav-links" aria-label="Main navigation">
-          <a href="#overview">Overview</a>
-          <a href="#coverage">Coverage</a>
-          <a href="#steps">Steps</a>
-          <a href="#setup">Setup</a>
-          <a href="#run">Run</a>
-        </nav>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero">
-        <div class="container hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow">Playwright UAT Suite</p>
-            <h1>Automated quality checks for the HatchEvent portal.</h1>
-            <p class="lead">
-              Validate the core journeys across Event Organiser, Vendor Registration,
-              RFQ flows, and RSVP/Event Service experiences with pass/fail tracking
-              directly back into the Excel tracker.
-            </p>
-            <div class="cta-row">
-              <a class="button primary" href="#run">Run the suite</a>
-              <a class="button secondary" href="https://github.com/missomisso/HatchEvent-UAT" target="_blank" rel="noreferrer">View repo</a>
-            </div>
-            <ul class="stat-row" aria-label="Project statistics">
-              <li><strong>91</strong><span>test cases</span></li>
-              <li><strong>4</strong><span>journeys</span></li>
-              <li><strong>1</strong><span>automation runner</span></li>
-            </ul>
-          </div>
-
-          <div class="hero-panel" aria-label="Project overview card">
-            <div class="panel-header">
-              <span class="dot green"></span>
-              <span class="dot amber"></span>
-              <span class="dot red"></span>
-            </div>
-            <div class="panel-body">
-              <div class="status-block">
-                <span class="label">Status</span>
-                <strong>UAT ready</strong>
-              </div>
-              <div class="mini-grid">
-                <div>
-                  <span>EO</span>
-                  <strong>31 tests</strong>
-                </div>
-                <div>
-                  <span>Vendor</span>
-                  <strong>26 tests</strong>
-                </div>
-                <div>
-                  <span>RFQ</span>
-                  <strong>18 tests</strong>
-                </div>
-                <div>
-                  <span>SVC</span>
-                  <strong>16 tests</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="overview" class="section">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Overview</p>
-            <h2>Built for repeatable regression coverage.</h2>
-          </div>
-          <div class="card-grid three">
-            <article class="card">
-              <h3>Portal coverage</h3>
-              <p>
-                Exercises the main user flows for Event Organisers, Vendors, RFQ
-                negotiation, and event service interactions on staging.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Automatic tracking</h3>
-              <p>
-                Results are written back into the Excel tracker with pass/fail status,
-                notes, and date stamps for reporting.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Fast local runs</h3>
-              <p>
-                Run a full suite or narrow to a single journey using Playwright scripts
-                tailored to the HatchEvent workflow.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="coverage" class="section alt">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Coverage</p>
-            <h2>Four main test journeys.</h2>
-          </div>
-          <div class="journey-list">
-            <div class="journey-item">
-              <div>
-                <span class="journey-tag">EO</span>
-                <h3>Event Organiser Journey</h3>
-              </div>
-              <p>31 scenarios covering organiser actions and event management.</p>
-            </div>
-            <div class="journey-item">
-              <div>
-                <span class="journey-tag">VD</span>
-                <h3>Vendor Registration</h3>
-              </div>
-              <p>26 scenarios for vendor onboarding and listing flows.</p>
-            </div>
-            <div class="journey-item">
-              <div>
-                <span class="journey-tag">RFQ</span>
-                <h3>RFQ Process</h3>
-              </div>
-              <p>18 scenarios covering request-for-quote activity and bidding.</p>
-            </div>
-            <div class="journey-item">
-              <div>
-                <span class="journey-tag">SVC</span>
-                <h3>Event Service & RSVP</h3>
-              </div>
-              <p>16 scenarios for service interactions and RSVP flows.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="steps" class="section">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Test steps</p>
-            <h2>How each UAT run is executed.</h2>
-          </div>
-          <div class="steps-grid">
-            <article class="step-card">
-              <span class="step-number">01</span>
-              <h3>Prepare the environment</h3>
-              <p>Set up the staging credentials, confirm the correct base URL, and ensure the EO and Vendor accounts are ready.</p>
-            </article>
-            <article class="step-card">
-              <span class="step-number">02</span>
-              <h3>Launch the journey</h3>
-              <p>Run the relevant Playwright flow for EO, Vendor, RFQ, or Event Service to begin the automated execution.</p>
-            </article>
-            <article class="step-card">
-              <span class="step-number">03</span>
-              <h3>Validate each scenario</h3>
-              <p>Every case checks the critical actions, expected screens, and validation states before marking Pass or Fail.</p>
-            </article>
-            <article class="step-card">
-              <span class="step-number">04</span>
-              <h3>Report back to tracker</h3>
-              <p>Results are written to the Excel tracker with the outcome, date, and any failure notes for quick UAT review.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="setup" class="section alt">
-        <div class="container split">
-          <div>
-            <p class="eyebrow">Setup</p>
-            <h2>Configure your staging credentials.</h2>
-            <p>
-              The suite expects valid EO and Vendor accounts on the staging platform.
-              Create a local <code>.env</code> file from the example template and add your values.
-            </p>
-            <pre><code>cp .env.example .env
-# update EO_EMAIL, EO_PASSWORD, VENDOR_EMAIL, VENDOR_PASSWORD</code></pre>
-          </div>
-          <div class="card">
-            <h3>Required values</h3>
-            <ul class="bullet-list">
-              <li>EO account</li>
-              <li>Vendor account</li>
-              <li>Optional admin credentials</li>
-              <li>BASE_URL for staging</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="run" class="section">
-        <div class="container split">
-          <div>
-            <p class="eyebrow">Run</p>
-            <h2>Execute the suite from the terminal.</h2>
-            <pre><code>npm install
-./run-uat.sh
-
-# or run a single journey
-./run-uat.sh eo
-./run-uat.sh vendor
-./run-uat.sh rfq
-./run-uat.sh svc</code></pre>
-          </div>
-          <div class="card accent">
-            <h3>What happens</h3>
-            <ul class="bullet-list">
-              <li>Launches Playwright browsers</li>
-              <li>Runs the selected journey(s)</li>
-              <li>Exports JSON results</li>
-              <li>Updates the Excel tracker</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="container footer-inner">
-        <span>HatchEvent UAT</span>
-        <a href="https://github.com/missomisso/HatchEvent-UAT" target="_blank" rel="noreferrer">GitHub</a>
-      </div>
-    </footer>
+    <div class="card">
+      <div class="badge">HatchEvent UAT</div>
+      <h1>Redirecting to the live dashboard…</h1>
+      <p>
+        If you are not redirected automatically,
+        <a href="./docs/">open the current UAT dashboard</a>.
+      </p>
+    </div>
   </body>
 </html>

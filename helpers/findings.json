@@ -1,0 +1,162 @@
+[
+ {
+  "id": "NEW-01",
+  "severity": "Medium",
+  "area": "EO + Vendor portal",
+  "title": "\"Export\" buttons do nothing",
+  "detail": "No download and no network request on EO Billing, Enquiries, RSVPs, Event services, Guest list and Vendor RFQs, Invoices, Listing. (Guest list per-event CSV does work.)",
+  "test": "NEW-01a…h"
+ },
+ {
+  "id": "NEW-02",
+  "severity": "High",
+  "area": "Vendor · EDMs",
+  "title": "EDM packages never load after choosing a listing",
+  "detail": "/vendor/edm: selecting any listing shows no EDM packages and no API call is made; Continue stays disabled, so a vendor cannot buy an EDM.",
+  "test": "VD-TC-22"
+ },
+ {
+  "id": "NEW-03",
+  "severity": "Medium",
+  "area": "EO · Billing",
+  "title": "Billing summary does not match the invoice list",
+  "detail": "Summary says 6 invoices / $2,027; the list (All, page 1 of 1) shows 5 invoices totalling $1,155.",
+  "test": "RFQ-TC-15"
+ },
+ {
+  "id": "NEW-04",
+  "severity": "Low",
+  "area": "Vendor · Credits",
+  "title": "Credits packages show lorem ipsum",
+  "detail": "/vendor/credits and its summary: \"Buy credits to lorem ipsum dolor sit amet\", \"Use to buy lorem ipsum…\".",
+  "test": "NEW-04, HLT-TC-32"
+ },
+ {
+  "id": "NEW-05",
+  "severity": "Low",
+  "area": "EO · HatchEvent Services",
+  "title": "HE Services pages reuse RSVP wording",
+  "detail": "HE Services selection is titled \"HatchEvent RSVP Menu\"; summary says \"What happens after you purchased a RSVP Package?\" and lists an \"RSVP Services contract/invoice\".",
+  "test": "NEW-05"
+ },
+ {
+  "id": "NEW-06",
+  "severity": "Medium",
+  "area": "EO · Guest list",
+  "title": "Draft events appear under \"Ongoing Events\" on Guest List",
+  "detail": "Drafts (e.g. \"Portal review test December 2026\", \"UAT-AUTO Wizard Draft\") are listed as ongoing events on Event guest list, but not on RSVPs.",
+  "test": "NEW-06"
+ },
+ {
+  "id": "NEW-07",
+  "severity": "Low",
+  "area": "EO · RSVP",
+  "title": "Junk invite template \"ergergerg\" offered to EOs",
+  "detail": "Step \"Upload your e-Invite background\" lists a template named \"ergergerg\" next to the real templates.",
+  "test": "NEW-07"
+ },
+ {
+  "id": "NEW-08",
+  "severity": "Low",
+  "area": "EO · Wizard (a11y)",
+  "title": "Wizard back/forward buttons have no accessible name",
+  "detail": "The arrow buttons around \"Save for later\" have no text/aria-label; screen readers announce only \"button\".",
+  "test": "NEW-08"
+ },
+ {
+  "id": "NEW-09",
+  "severity": "Low",
+  "area": "All pages · footer",
+  "title": "\"Follow Us\" social icons link to \"#\"",
+  "detail": "All five social icons in the footer have href=\"#\".",
+  "test": "NEW-09"
+ },
+ {
+  "id": "NEW-10",
+  "severity": "High",
+  "area": "EO · Wizard",
+  "title": "Wizard time field: choosing PM before typing saves an AM time; retyping is ignored",
+  "detail": "(1) Choose PM, then type 02:00 → field flips back to AM and the server receives 02:00 (not 14:00). (2) A field that already has a time ignores new typing: 09:00 → type 04:00 → still 09:00; choosing PM then shows 21:00. (3) Typing 04:00 then PM displays \"16:00 PM\" (value sent is correct, display is confusing). (4) 12:00 AM displays as \"00:00 AM\". Repro on /events/create/wizard/details.",
+  "test": "NEW-10"
+ },
+ {
+  "id": "NEW-11",
+  "severity": "Low",
+  "area": "EO · Enquiries (a11y)",
+  "title": "Event cards cannot be expanded with the keyboard",
+  "detail": "Collapsed event cards (Past events) expand only by mouse — the header is a <div> without role/tabindex.",
+  "test": "NEW-11"
+ },
+ {
+  "id": "Q-01",
+  "severity": "Question",
+  "area": "EO · Enquiries",
+  "title": "Draft events cannot be deleted",
+  "detail": "Draft cards offer only Edit event name and Edit dates. Every \"Save for later\" leaves a permanent draft. Intended?",
+  "test": "WR-TC-02 (note)"
+ },
+ {
+  "id": "Q-02",
+  "severity": "Question",
+  "area": "Vendor · Listing",
+  "title": "Opening \"Create my own listing\" reserves a listing number",
+  "detail": "Clicking Continue calls POST /vendor-listings/listing-number before anything is entered (\"Listing no: 4 / 4\"). Abandoned attempts may consume numbers.",
+  "test": "VD-TC-10 (note)"
+ },
+ {
+  "id": "Q-03",
+  "severity": "Question",
+  "area": "EO · RSVP",
+  "title": "Overlay opacity shown as 0.4 but saved as 0",
+  "detail": "The design editor slider shows 0.4; the saved payload sends overlay_opacity: 0. Check the saved invite matches the editor (related to BUG-21).",
+  "test": "Manual"
+ },
+ {
+  "id": "Q-04",
+  "severity": "Question",
+  "area": "Vendor · Membership",
+  "title": "Gold fee $2,400 vs \"Total price including VAT/GST $711.03\"",
+  "detail": "Membership record for the current Gold cycle shows a total far below the fee. Pro-rated upgrade, or wrong figure?",
+  "test": "Manual"
+ },
+ {
+  "id": "Q-05",
+  "severity": "Question",
+  "area": "EO · Profile",
+  "title": "No way to edit the EO profile on web; odd test data",
+  "detail": "Profile is read-only on web. Important dates include \"41920801893 - 13 Jan 2026\".",
+  "test": "EO-TC-07"
+ },
+ {
+  "id": "Q-06",
+  "severity": "Question",
+  "area": "Public",
+  "title": "/events/create/ai is reachable without login",
+  "detail": "Confirm this public entry point is intended.",
+  "test": "AC-TC-09"
+ },
+ {
+  "id": "Q-07",
+  "severity": "Info",
+  "area": "EO · RSVP",
+  "title": "Edit RSVP takes ~10 s on a blank loading screen",
+  "detail": "/eo/rsvp/loading shows only the header/footer for about 10 seconds before the first step.",
+  "test": "NEG-TC-15 timings"
+ },
+ {
+  "id": "Q-08",
+  "severity": "Info",
+  "area": "EO · all pages",
+  "title": "Hydration-mismatch console error on EO pages",
+  "detail": "Vue reports a hydration mismatch on load; harmless to users today but often hides real rendering bugs.",
+  "test": "console-error annotations"
+ },
+ {
+  "id": "Q-09",
+  "severity": "Info",
+  "area": "EO · Wizard",
+  "title": "Intermittent 500 on /api/proxy/sanctum/csrf-cookie",
+  "detail": "Seen once during the full run (EO-TC-12, opening a vendor preview). The page recovered, but a 500 on the CSRF endpoint can cause random 419/login failures.",
+  "test": "api-5xx annotation"
+ }
+]

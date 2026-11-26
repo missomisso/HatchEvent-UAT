@@ -22,3 +22,10 @@ results/
 *.swp
 Thumbs.db
 ~$*
+
+# v2 additions
+.auth/
+results/
+HatchEvent_Playwright_Runs.xlsx
+HatchEvent_UAT_Test_Catalogue.xlsx
+__pycache__/

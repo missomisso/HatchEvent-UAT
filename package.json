@@ -1,14 +1,20 @@
 {
   "name": "hatchevent-uat",
-  "version": "1.0.0",
-  "description": "Playwright UAT suite for HatchEvent Platform",
+  "version": "2.0.0",
+  "description": "Playwright UAT suite for the HatchEvent portal (staging)",
   "scripts": {
-    "test":         "playwright test",
-    "test:eo":      "playwright test tests/eo-journey.spec.js",
-    "test:vendor":  "playwright test tests/vendor-registration.spec.js",
-    "test:rfq":     "playwright test tests/rfq-process.spec.js",
-    "test:svc":     "playwright test tests/event-service.spec.js",
-    "test:report":  "playwright show-report"
+    "test":             "playwright test",
+    "test:eo":          "playwright test tests/eo-journey.spec.js",
+    "test:vendor":      "playwright test tests/vendor-registration.spec.js",
+    "test:rfq":         "playwright test tests/rfq-process.spec.js",
+    "test:svc":         "playwright test tests/event-service.spec.js",
+    "test:access":      "playwright test tests/00-access-control.spec.js tests/zz-logout.spec.js",
+    "test:validation":  "playwright test tests/01-validation.spec.js",
+    "test:bugs":        "playwright test tests/02-bugs-and-findings.spec.js",
+    "test:health":      "playwright test tests/03-page-health.spec.js",
+    "test:writes":      "playwright test tests/04-write-flows.spec.js",
+    "test:report":      "playwright show-report results/html-report",
+    "catalogue":        "python3 scripts/build_catalogue.py results/results.json"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0"

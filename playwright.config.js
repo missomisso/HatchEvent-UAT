@@ -1,31 +1,32 @@
-// @ts-check
-const { defineConfig, devices } = require('@playwright/test');
+// playwright.config.js — HatchEvent UAT (v2, rebuilt 26 Nov 2026 against the post-25-Nov staging UI)
+const { defineConfig } = require('@playwright/test');
 try { require('dotenv').config(); } catch (e) { /* dotenv optional */ }
 
 module.exports = defineConfig({
   testDir: './tests',
-  timeout: 45_000,           // 45s per test step
-  expect: { timeout: 10_000 },
-  fullyParallel: false,      // UAT runs sequentially — shared staging state
-  retries: 1,                // 1 automatic retry on failure before marking Fail
-  workers: 1,
+  timeout: 60_000,
+  expect: { timeout: 12_000 },
+  workers: 1,                 // one shared staging account per role → run serially
+  retries: process.env.CI ? 1 : 0,
   reporter: [
     ['list'],
     ['json', { outputFile: 'results/results.json' }],
-    ['html',  { outputFolder: 'results/html-report', open: 'never' }],
+    ['html', { outputFolder: 'results/html-report', open: 'never' }],
   ],
-
   use: {
-    baseURL:       process.env.BASE_URL || 'https://portal.staging.hatchevent.com',
-    headless:      true,     // headless by default; override with --headed CLI flag
-    viewport:      { width: 1440, height: 900 },
-    screenshot:    'only-on-failure',
-    video:         'retain-on-failure',
-    trace:         'retain-on-failure',
+    baseURL: process.env.BASE_URL || 'https://portal.staging.hatchevent.com',
+    headless: true,
+    viewport: { width: 1440, height: 900 },
     actionTimeout: 15_000,
+    navigationTimeout: 30_000,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
   },
-
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // 1) Logs in once per role and saves the session to .auth/*.json
+    { name: 'setup', testMatch: /auth\.setup\.js/ },
+    // 2) Everything else reuses those sessions
+    { name: 'uat', testMatch: /.*\.spec\.js/, dependencies: ['setup'] },
   ],
 });

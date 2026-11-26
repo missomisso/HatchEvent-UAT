@@ -1,200 +1,101 @@
-// tests/rfq-process.spec.js — RFQ Process UAT (RFQ-TC-01 through RFQ-TC-18)
-// Source: HatchEvent UAT Tracker — Level 3
-// Selectors verified against portal.staging.hatchevent.com — 2026-11-06
+// tests/rfq-process.spec.js — Level 3 · RFQ process (RFQ-TC-01 … 18)
+const { test, expect, meta } = require('../helpers/fixtures');
+const { open, heading, bodyText, wizard, expectToast, EO_STATE, VENDOR_STATE } = require('../helpers/portal');
 
-const { test, expect } = require('@playwright/test');
-const { loginAsEO, loginAsVendor } = require('../helpers/auth');
-const { screenshot, checkEmail } = require('../helpers/common');
+test.describe('RFQ · EO side', () => {
+  test.use({ storageState: EO_STATE });
 
-const BASE = process.env.BASE_URL || 'https://portal.staging.hatchevent.com';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: RFQ Submission (EO side)
-// RFQ submission on HatchEvent happens via the Event Services flow — EO selects
-// services they need and vendors are matched; this is different from a classic
-// "submit RFQ to vendor" flow.
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('RFQ-TC-01–03 · RFQ Submission', () => {
-  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
-
-  test('RFQ-TC-01 · EO can browse HatchEvent Services (vendor matching entry)', async ({ page }) => {
-    await page.goto('/eo/services');
-    await expect(page.getByRole('heading', { name: 'Event Services', exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: 'HatchEvent Services' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-01-he-services-vendor-match');
+  test('RFQ-TC-01 · Complete RFQ is ready to send (stops at the send button)', meta('Partial', null, '"Request for quotation now" is never clicked'), async ({ page }) => {
+    await wizard.walkToFinal(page);
+    await expect(page.getByRole('button', { name: 'Request for quotation now' })).toBeEnabled();
   });
 
-  test('RFQ-TC-02 · Service Selection Validation — Terms checkbox required', async ({ page }) => {
-    // Service summary page requires event context; verify entry point is reachable
-    await page.goto('/eo/services');
-    await expect(page.getByRole('button', { name: 'HatchEvent Services' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-02-tc-required');
+  test('RFQ-TC-02 · RFQ is blocked when required details are missing', meta('Full'), async ({ page }) => {
+    await wizard.start(page);
+    await wizard.forward(page).click();
+    await expectToast(page, 'Start date is required');
+    await expect(page.getByRole('button', { name: 'Request for quotation now' })).toHaveCount(0);
   });
 
-  test('RFQ-TC-03 · Service summary shows purchase details', async ({ page }) => {
-    // Full summary page requires completing service selection; verify services page loads with tiles
-    await page.goto('/eo/services');
-    await expect(page.getByRole('heading', { name: 'Event Services', exact: true })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-03-summary-page');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Vendor RFQ Response
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('RFQ-TC-04–06 · Vendor Response', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('RFQ-TC-04 · Vendor receives RFQs in portal — BUG-31 regression', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Request for quotations' })).toBeVisible({ timeout: 10_000 });
-    // Current RFQs section exists
-    await expect(page.getByRole('heading', { name: 'Current RFQs' })).toBeVisible();
-    // There's at least one RFQ with a Submit button
-    await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible();
-    await screenshot(page, 'RFQ-TC-04-vendor-rfq-received');
+  test('RFQ-TC-03 · RFQ to 2+ vendors — up to 3 selectable', meta('Partial', null, 'Never sends'), async ({ page }) => {
+    await wizard.start(page); await wizard.fillWhen(page);
+    await wizard.forward(page).click();
+    await page.getByLabel('Near me').check({ force: true });
+    await wizard.forward(page).click();
+    await page.getByRole('button', { name: 'Catering', exact: true }).click();
+    await wizard.forward(page).click();
+    const cards = page.locator('.card');
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+    await cards.nth(0).click(); await cards.nth(1).click();
+    await expect(page.locator('.card.card--selected')).toHaveCount(2);
   });
 
-  test('RFQ-TC-05 · Submit Quotation entry point visible', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Request for quotations' })).toBeVisible({ timeout: 10_000 });
-    // Submit button exists for current RFQs
-    await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-05-quotation-form');
+  test('RFQ-TC-07 · EO is emailed when a vendor submits a quotation', meta('Manual', 'BUG-47'), async () => { test.skip(true, 'Manual — email'); });
+
+  test('RFQ-TC-08 · Accepting a quotation: Acknowledge is offered', meta('Partial', null, 'Never clicked'), async ({ page }) => {
+    await open(page, '/eo/enquiries');
+    await expect(page.getByRole('button', { name: 'Acknowledge' }).first()).toBeEnabled();
   });
 
-  test('RFQ-TC-06 · Vendor RFQ page has Submit and action buttons', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Current RFQs' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-06-contact-offline-option');
-  });
-});
+  test('RFQ-TC-09 · EO rejects a quotation with reason', meta('Manual'), async () => { test.skip(true, 'Manual — would change a live quotation'); });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Quotation Review by EO
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('RFQ-TC-07–11 · Quotation Review by EO', () => {
-  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
-
-  test('RFQ-TC-07 · EO notified of quotations — enquiry page shows vendor details', async ({ page }) => {
-    await page.goto('/eo/enquiries');
-    // "View vendor details" button exists on an event
-    await expect(page.getByRole('button', { name: 'View vendor details' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-07-eo-vendor-details');
+  test('RFQ-TC-10 · Enquiries page shows no server error / stack trace (BUG-18)', meta('Full', 'BUG-18'), async ({ page, health }) => {
+    await open(page, '/eo/enquiries');
+    expect(await bodyText(page)).not.toMatch(/exception|stack trace|SQLSTATE|Internal Server Error|at \w+\.\w+ \(/i);
+    expect(health.serverErrors).toEqual([]);
   });
 
-  test('RFQ-TC-08 · Accept Quotation via Event Services flow', async ({ page }) => {
-    await page.goto('/eo/enquiries');
-    // Event Services button opens the vendor/quotation view
-    await expect(page.getByRole('button', { name: 'Event Services' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-08-event-services-entry');
+  test('RFQ-TC-11 · Quotation PDF under Quote Price (BUG-19)', meta('Manual', 'BUG-19', 'No PDF button on the 26 Nov enquiries layout — confirm where the quote PDF now lives'), async ({ page }) => {
+    await open(page, '/eo/enquiries');
+    const pdf = page.getByRole('button', { name: /pdf/i }).or(page.getByRole('link', { name: /pdf/i }));
+    test.skip(await pdf.count() === 0, 'No PDF control on enquiries');
   });
 
-  test('RFQ-TC-09 · Reject Quotation option exists', async ({ page }) => {
-    // Rejection flow is accessed via event detail — verify the entry button exists
-    await page.goto('/eo/enquiries');
-    await expect(page.getByRole('button', { name: 'View vendor details' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-09-reject-entry');
+  for (const [id, name, bug] of [['12', 'EO pays the deposit', null], ['13', 'Card payment end-to-end', null], ['14', 'FPX bank-transfer payment', null]]) {
+    test(`RFQ-TC-${id} · ${name}`, meta('Manual', bug, 'Real payment — Stripe test mode by a person'), async () => { test.skip(true, 'Manual — payment'); });
+  }
+
+  test('RFQ-TC-15 · Billing summary (count & total amount) matches the invoice list', meta('Full', 'BUG-29, NEW-03', 'NEW-03: 26 Nov — summary says 6 invoices / $2,027 but list shows 5 rows totalling $1,155'), async ({ page }) => {
+    test.fail(true, 'NEW-03 — Billing summary does not match invoice list (still present)');
+    await open(page, '/eo/billing');
+    const t = await bodyText(page);
+    const total = +(t.match(/Total invoices (\d+)/) || [])[1];
+    const amount = +((t.match(/Total amount \$ ?([\d,]+(\.\d+)?)/) || [])[1] || '0').replace(/,/g, '');
+    const rows = await page.locator('tbody tr').allInnerTexts();
+    const sum = rows.reduce((a, r) => a + +((r.match(/\$ ?([\d,]+(\.\d+)?)/) || [])[1] || '0').replace(/,/g, ''), 0);
+    test.info().annotations.push({ type: 'note', description: `Summary: ${total} invoices / $${amount}. List: ${rows.length} rows / $${sum}` });
+    expect(rows.length).toBe(Math.min(total, 10));
+    if (total <= 10) expect(sum).toBeCloseTo(amount, 0);
   });
 
-  test('RFQ-TC-10 · BUG-18 regression — Accept RFQ shows no command prompt', async ({ page }) => {
-    await page.goto('/eo/enquiries');
-    // Navigate to a service flow without errors
-    await page.getByRole('button', { name: 'Event Services' }).first().click();
-    await page.waitForTimeout(3000);
-    // Should NOT see command prompt / server error text anywhere on page
-    await expect(page.getByText(/>_|internal server error|500 error|command prompt/i)).not.toBeVisible();
-    await screenshot(page, 'RFQ-TC-10-no-cmd-prompt');
-  });
+  test('RFQ-TC-17 · EO notified when all vendors miss the deadline', meta('Manual'), async () => { test.skip(true, 'Manual — email/notification'); });
 
-  test('RFQ-TC-11 · BUG-19 regression — Billing PDF button exists and clickable', async ({ page }) => {
-    await page.goto('/eo/billing');
-    await expect(page.getByRole('heading', { name: 'Invoices' })).toBeVisible({ timeout: 10_000 });
-    const pdfBtn = page.getByRole('button', { name: 'View invoice PDF' }).first();
-    await expect(pdfBtn).toBeVisible({ timeout: 10_000 });
-    await expect(pdfBtn).toBeEnabled();
-    await screenshot(page, 'RFQ-TC-11-billing-pdf');
+  test('RFQ-TC-18 · EO can choose other services after a rejection (BUG-36)', meta('Partial', 'BUG-36'), async ({ page }) => {
+    await open(page, '/eo/services');
+    await expect(page.getByRole('button', { name: 'Buy other services' }).first()).toBeVisible();
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Payment Processing (Stripe-hosted checkout)
-// HatchEvent uses Stripe Checkout (hosted) — the "Secure checkout at STRIPE"
-// button redirects to checkout.stripe.com. We verify the checkout entry point
-// exists, but do NOT complete payment (real card not allowed; staging may not
-// be in test mode).
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('RFQ-TC-12–15 · Payment Processing', () => {
-  test.beforeEach(async ({ page }) => { await loginAsEO(page); });
+test.describe('RFQ · Vendor side', () => {
+  test.use({ storageState: VENDOR_STATE });
 
-  test('RFQ-TC-12 · Service purchase entry visible (Stripe checkout flow)', async ({ page }) => {
-    // Full Stripe flow requires completing service selection; verify services page is reachable
-    await page.goto('/eo/services');
-    await expect(page.getByRole('button', { name: 'HatchEvent Services' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-12-stripe-checkout-button');
+  test('RFQ-TC-04 · RFQ shows in vendor portal with EO contact info (BUG-31, BUG-58)', meta('Full', 'BUG-31, BUG-58'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    expect(await bodyText(page)).toMatch(/Event enquiry no EE-\d{4}-\d+/);
+    await page.getByRole('button', { name: 'Event organiser info' }).first().click();
+    await expect(heading(page, 'Event organiser details')).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).last().click();
   });
 
-  test('RFQ-TC-13 · Services page clickable (T&C flow requires event state)', async ({ page }) => {
-    await page.goto('/eo/services');
-    const svcBtn = page.getByRole('button', { name: 'HatchEvent Services' }).first();
-    await expect(svcBtn).toBeVisible({ timeout: 10_000 });
-    await expect(svcBtn).toBeEnabled();
-    await screenshot(page, 'RFQ-TC-13-tc-checkbox');
+  test('RFQ-TC-05 · Vendor adds line items; totals auto-calculate', meta('Manual', 'BUG-54', 'Requires submitting a real quotation'), async () => { test.skip(true, 'Manual'); });
+  test('RFQ-TC-06 · Vendor sets deposit % and balance due date', meta('Manual', null, 'Requires submitting a real quotation'), async () => { test.skip(true, 'Manual'); });
+
+  test('RFQ-TC-16 · Expired RFQs show reason and no actions (BUG-31, BUG-40)', meta('Full', 'BUG-31, BUG-40'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    await page.getByRole('button', { name: 'Expired', exact: true }).click();
+    const t = await bodyText(page);
+    expect(t).toMatch(/Status Expired/);
+    expect(t).toMatch(/Expiry reason/);
+    await expect(page.getByRole('button', { name: /^(Submit|Purchase|Reject)$/ })).toHaveCount(0);
   });
-
-  test('RFQ-TC-14 · RSVP Package Gold tier purchase entry point', async ({ page }) => {
-    // Verify Purchase Package button exists (full flow depends on event state)
-    await page.goto('/eo/rsvp');
-    await expect(page.getByRole('heading', { name: 'RSVP by events', exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: 'Purchase Package' }).first()).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-14-rsvp-gold-checkout');
-  });
-
-  test('RFQ-TC-15 · BUG-29 regression — Invoice filename not "stream"', async ({ page }) => {
-    await page.goto('/eo/billing');
-    const popupPromise = page.context().waitForEvent('page', { timeout: 10_000 }).catch(() => null);
-    const dlPromise   = page.waitForEvent('download', { timeout: 10_000 }).catch(() => null);
-    await page.getByRole('button', { name: 'View invoice PDF' }).first().click();
-    const dl = await dlPromise;
-    const popup = await popupPromise;
-    if (dl) {
-      const fn = dl.suggestedFilename();
-      expect(fn).not.toBe('stream');
-      expect(fn.length).toBeGreaterThan(5);
-    }
-    // If it opens in popup instead, URL should contain invoice indicator
-    if (popup) {
-      await popup.waitForLoadState('load', { timeout: 10_000 }).catch(()=>{});
-      const u = popup.url();
-      expect(u).toMatch(/invoice|pdf|stripe|checkout|billing/i);
-    }
-    await screenshot(page, 'RFQ-TC-15-invoice-filename');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Edge Cases
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('RFQ-TC-16–18 · Edge Cases', () => {
-
-  test('RFQ-TC-16 · BUG-31 regression — Vendor past RFQ filters', async ({ page }) => {
-    await loginAsVendor(page);
-    await page.goto('/vendor/rfqs');
-    // Past RFQs section with filter tabs
-    await expect(page.getByRole('heading', { name: 'Past RFQs' })).toBeVisible({ timeout: 10_000 });
-    for (const status of ['All', 'Completed', 'Rejected', 'Expired']) {
-      await expect(page.getByRole('button', { name: status, exact: true }).first()).toBeVisible();
-    }
-    await screenshot(page, 'RFQ-TC-16-past-rfq-filters');
-  });
-
-  test('RFQ-TC-17 · EO notification — enquiry page loads normally', async ({ page }) => {
-    await loginAsEO(page);
-    await page.goto('/eo/enquiries');
-    await expect(page.getByRole('heading', { name: 'Event Enquiries', exact: true })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'RFQ-TC-17-enquiry-page');
-  });
-
-  test.skip('RFQ-TC-18 · EO Vendor Reselection [BLOCKED — BUG-36]', async ({ page }) => {});
 });

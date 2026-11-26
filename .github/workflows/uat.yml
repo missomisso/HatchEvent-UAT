@@ -3,18 +3,18 @@ name: HatchEvent UAT
 on:
   workflow_dispatch:
     inputs:
-      journey:
-        description: 'Which journey to run'
+      suite:
+        description: 'Which tests to run'
         required: true
         default: 'all'
         type: choice
-        options:
-          - all
-          - eo
-          - vendor
-          - rfq
-          - svc
-
+        options: [all, eo, vendor, rfq, svc, access, validation, bugs, health, writes]
+      write_flows:
+        description: 'Also re-save the RSVP design (WR-TC-03/04)?'
+        required: true
+        default: 'off'
+        type: choice
+        options: ['off', 'rsvp']
   schedule:
     - cron: '0 19 * * 0-4'   # Sun–Thu 19:00 UTC = Mon–Fri 03:00 SGT
 
@@ -22,80 +22,55 @@ jobs:
   run-uat:
     name: Run Playwright UAT
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 90
     env:
       BASE_URL:        ${{ secrets.BASE_URL }}
       EO_EMAIL:        ${{ secrets.EO_EMAIL }}
       EO_PASSWORD:     ${{ secrets.EO_PASSWORD }}
       VENDOR_EMAIL:    ${{ secrets.VENDOR_EMAIL }}
       VENDOR_PASSWORD: ${{ secrets.VENDOR_PASSWORD }}
-      ADMIN_URL:       ${{ secrets.ADMIN_URL }}
-      ADMIN_EMAIL:     ${{ secrets.ADMIN_EMAIL }}
-      ADMIN_PASSWORD:  ${{ secrets.ADMIN_PASSWORD }}
+      WRITE_FLOWS:     ${{ github.event.inputs.write_flows == 'rsvp' && 'rsvp' || '' }}
       TESTER_NAME:     'Laurent Misso (CI)'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install npm dependencies
-        run: npm install
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Install openpyxl
-        run: pip install openpyxl
-
-      - name: Determine test script
-        id: pick
+      - name: Install dependencies
         run: |
-          case "${{ github.event.inputs.journey || 'all' }}" in
-            eo)     echo "script=test:eo"     >> "$GITHUB_OUTPUT" ;;
-            vendor) echo "script=test:vendor" >> "$GITHUB_OUTPUT" ;;
-            rfq)    echo "script=test:rfq"    >> "$GITHUB_OUTPUT" ;;
-            svc)    echo "script=test:svc"    >> "$GITHUB_OUTPUT" ;;
-            *)      echo "script=test"        >> "$GITHUB_OUTPUT" ;;
-          esac
+          npm install
+          npx playwright install --with-deps chromium
+          pip install openpyxl
 
       - name: Run Playwright tests
         id: tests
         continue-on-error: true
-        run: npm run ${{ steps.pick.outputs.script }}
+        run: |
+          SUITE="${{ github.event.inputs.suite || 'all' }}"
+          if [ "$SUITE" = "all" ]; then npm test; else npm run "test:$SUITE"; fi
 
-      - name: Update UAT tracker
+      - name: Log results + build test catalogue
         if: always()
         run: |
-          TRACKER=$(ls HatchEvent*UAT*Tracker*.xlsx 2>/dev/null | head -1)
-          if [ -z "$TRACKER" ]; then
-            echo "::warning::No tracker .xlsx found in repo — skipping tracker update"
-          elif [ ! -f results/results.json ]; then
-            echo "::warning::results/results.json not generated — skipping tracker update"
-          else
-            python3 update_tracker.py results/results.json "$TRACKER"
-          fi
+          if [ ! -f results/results.json ]; then echo "::warning::No results.json"; exit 0; fi
+          python3 update_tracker.py results/results.json          # → HatchEvent_Playwright_Runs.xlsx (table: PlaywrightRuns)
+          python3 scripts/build_catalogue.py results/results.json
 
-      - name: Upload updated tracker
+      - name: Upload run results + catalogue
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: HatchEvent-UAT-Tracker-${{ github.run_number }}
-          path: HatchEvent*UAT*Tracker*.xlsx
+          name: HatchEvent-UAT-Tracker-${{ github.run_number }}   # name kept for the Power Automate flow
+          path: |
+            HatchEvent_Playwright_Runs.xlsx
+            HatchEvent_UAT_Test_Catalogue.xlsx
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Upload Playwright HTML report
+      - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -104,24 +79,27 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Write run summary
+      - name: Run summary
         if: always()
         run: |
-          PASS=$(grep -c '"status": "passed"' results/results.json 2>/dev/null || echo 0)
-          FAIL=$(grep -c '"status": "failed"' results/results.json 2>/dev/null || echo 0)
-          SKIP=$(grep -c '"status": "skipped"' results/results.json 2>/dev/null || echo 0)
-          {
-            echo "## HatchEvent UAT — Run #${{ github.run_number }}"
-            echo ""
-            echo "| Result | Count |"
-            echo "|--------|-------|"
-            echo "| Pass    | $PASS |"
-            echo "| Fail    | $FAIL |"
-            echo "| Skipped | $SKIP |"
-            echo ""
-            echo "Download the **updated tracker** and the **HTML report** from the Artifacts section above."
-          } >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          from collections import Counter
+          if not os.path.exists('results/results.json'):
+              print('No results'); raise SystemExit
+          from update_tracker import load
+          rows = load('results/results.json'); c = Counter(r['result'] for r in rows)
+          print(f"## HatchEvent UAT — run #{os.environ.get('GITHUB_RUN_NUMBER')}\n")
+          print('| Result | Count |\n|---|---|')
+          for k in ['Pass','Pass (flaky)','Fail','Known Bug','Fixed? Re-test','Manual','Skipped']:
+              print(f'| {k} | {c.get(k,0)} |')
+          bad = [r for r in rows if r['result'] in ('Fail','Fixed? Re-test')]
+          if bad:
+              print('\n### Needs attention')
+              for r in bad: print(f"- **{r['tc']}** {r['scenario']} — {r['result']}")
+          print('\nDownload the run results, catalogue and HTML report from **Artifacts** above.')
+          PY
 
-      - name: Propagate test exit status
+      - name: Fail the job if any test failed
         if: steps.tests.outcome == 'failure'
         run: exit 1

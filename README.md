@@ -1,198 +1,76 @@
-# HatchEvent — Playwright UAT Suite
+# HatchEvent UAT — Playwright suite (v2)
 
-Live website: https://missomisso.github.io/HatchEvent-UAT/
+Live dashboard: https://missomisso.github.io/HatchEvent-UAT/
 
-Automated UAT runner for the HatchEvent portal.  
-Covers **91 test cases** across 4 journeys and writes Pass/Fail results back into the Excel tracker automatically.
+Automated UAT for **portal.staging.hatchevent.com**, rebuilt on 26 Nov 2026 against the post-25-Nov UI.
+Runs every weekday at 03:00 SGT on GitHub Actions. Each run produces a results workbook (ready to append to the UAT Tracker), an Excel test catalogue and an HTML report.
 
----
+## What is tested
 
-## Quick Start
+| File | IDs | What it covers |
+|---|---|---|
+| `tests/eo-journey.spec.js` | EO-TC-01…31 | Event Organiser journey (same IDs as the tracker) |
+| `tests/vendor-registration.spec.js` | VD-TC-01…26 | Vendor journey |
+| `tests/rfq-process.spec.js` | RFQ-TC-01…18 | RFQ process, both sides |
+| `tests/event-service.spec.js` | SVC-TC-01…16 | Services & RSVP |
+| `tests/00-access-control.spec.js` + `zz-logout.spec.js` | AC-TC-01…20 | Logged-out redirects, role separation, 404, logout |
+| `tests/01-validation.spec.js` | NEG-TC-01…20 | Error messages and blocked submissions |
+| `tests/02-bugs-and-findings.spec.js` | REG-BUG-xx, NEW-xx | Bug Log regressions + new findings |
+| `tests/03-page-health.spec.js` | HLT-TC-xx | Every page: load time, heading, API 5xx, JS errors, broken images, placeholder text |
+| `tests/04-write-flows.spec.js` | WR-TC-xx | Data-changing flows on **UAT-AUTO** data only |
 
-```bash
-# 1. Install dependencies (once)
-npm install
+Every test is labelled with a **depth**:
 
-# 2. Set up credentials (once — see Credential Setup below)
-cp .env.example .env
-# edit .env with your staging credentials
+- **Full**: automated end to end.
+- **Partial**: automated up to a safety gate (Stripe checkout, *Request for quotation now*, *Start Campaign*, *Send invite*).
+- **Manual**: needs a person (OTP email, Google OAuth, real payment, mobile app). These show as *Manual* in the tracker. They are not reported as passes.
 
-# 3. Run all tests + update tracker
-./run-uat.sh
-```
+## Safety
 
----
+`helpers/fixtures.js` adds a **write-guard** to every test. It blocks every non-GET API call except:
 
-## Credential Setup
+- login and logout, plus the read-only vendor search
+- the scopes a write test asks for: `contacts`, `eventTitle`, `draft` (status=draft only) and `rsvpDesign`
 
-Tests log in to `portal.staging.hatchevent.com` using two portal accounts.  
-You need **one EO account** and **one Vendor account** on the staging environment.
+Stripe checkout pages are always blocked, and so is anything that looks like payment, an RFQ, a quotation, a campaign, an invite or a send.
+Each test lists the calls it blocked under the `write-guard-blocked` annotation in the HTML report.
 
-### Step 1 — Copy the template
+Data the tests create:
 
-```bash
-cp .env.example .env
-```
+- **Contact**: `UAT-AUTO Contact <uat-auto+…@example.com>`. It is created, edited and then deleted in the same test. Anything left over is removed the next night.
+- **Draft event**: one `UAT-AUTO Wizard Draft`, created once and then reused. Drafts can't be deleted in the portal, so the suite never creates a second one.
+- **RSVP design**: only re-saved when `WRITE_FLOWS=rsvp` (opt-in), so nightly runs never overwrite a design someone is testing by hand.
 
-### Step 2 — Open `.env` and fill in your values
+## Reading results
 
-```
-# Event Organiser (EO) staging account
-EO_EMAIL=your_eo_account@example.com
-EO_PASSWORD=your_eo_password
+`update_tracker.py` writes **HatchEvent_Playwright_Runs.xlsx**, which holds one row per test per run in an Excel Table named `PlaywrightRuns`. Your Power Automate flow (or a copy-paste) appends those rows to the live tracker.
+The script no longer re-saves the tracker itself, because openpyxl drops the tracker's cross-sheet dropdowns and some conditional formatting. If you really need to write into a tracker, use `--into-tracker` on a copy. The Result column means:
 
-# Vendor staging account
-VENDOR_EMAIL=your_vendor@example.com
-VENDOR_PASSWORD=your_vendor_password
+| Result | Meaning |
+|---|---|
+| Pass / Fail | As usual |
+| Known Bug | The linked bug is still there (expected failure) |
+| **Fixed? Re-test** | A test that expected a bug has passed. The bug looks fixed, so re-test it by hand and close it |
+| Manual | A person needs to do this one |
+| Pass (flaky) | Passed only on the retry |
 
-# Admin portal (optional — only used by Admin-side tests)
-ADMIN_URL=https://portal.hatchevent.com/admin
-ADMIN_EMAIL=your_admin@example.com
-ADMIN_PASSWORD=your_admin_password
+`scripts/build_catalogue.py` builds **HatchEvent_UAT_Test_Catalogue.xlsx**, which has five sheets: Summary, Test Catalogue (steps, depth, bugs and latest result), Bug Coverage and New Findings.
 
-# Staging base URL (leave as-is unless told otherwise)
-BASE_URL=https://portal.staging.hatchevent.com
-```
-
-> ⚠️ **Never commit `.env` to git.** It is already in `.gitignore`.
-
-### Where to get the accounts
-
-- **EO account**: Create a staging EO account on `portal.staging.hatchevent.com/register` using an email you control, or ask iFoundries to provision one.
-- **Vendor account**: Create a staging Vendor account via the vendor registration flow, or ask iFoundries to provision one with an approved listing so all downstream tests have data to work with.
-- **Admin account**: Ask iFoundries for admin credentials if admin-side test cases are in scope.
-
-### Recommended staging accounts
-
-For reproducible results the accounts should have **existing data** — at least:
-
-| Account | Data needed |
-|---------|-------------|
-| EO      | 1 confirmed event, 1 accepted quotation, 1 paid deposit, 1 RSVP form with responses |
-| Vendor  | 1 approved listing, 1 received RFQ, 1 paid bid fee |
-
-Tests are written to be resilient to missing data (most use `.first()` selectors and check element counts before acting), but a clean empty account will cause many tests to be marked Fail.
-
----
-
-## Running Tests
-
-### All journeys
+## Run it
 
 ```bash
-./run-uat.sh
+npm install && npx playwright install chromium
+cp .env.example .env        # fill in the staging test accounts
+npm test                    # everything (~45 min)
+npm run test:eo             # one suite; also test:vendor, test:rfq, test:svc, test:access, test:validation, test:bugs, test:health, test:writes
+npm run test:report         # open the HTML report
+npm run catalogue           # build the Excel catalogue from the last run
 ```
 
-### Single journey
+On GitHub, go to **Actions**, open **HatchEvent UAT** and click **Run workflow**. Pick a suite, and choose whether to include the RSVP design write.
+Repository secrets: `BASE_URL`, `EO_EMAIL`, `EO_PASSWORD`, `VENDOR_EMAIL`, `VENDOR_PASSWORD`.
 
-```bash
-./run-uat.sh eo        # EO Journey        (EO-TC-01 – EO-TC-31)
-./run-uat.sh vendor    # Vendor Registration (VD-TC-01 – VD-TC-26)
-./run-uat.sh rfq       # RFQ Process        (RFQ-TC-01 – RFQ-TC-18)
-./run-uat.sh svc       # Event Service & RSVP (SVC-TC-01 – SVC-TC-16)
-```
+## When the portal changes
 
-### With visible browser
-
-```bash
-./run-uat.sh --headed          # all journeys, browser visible
-./run-uat.sh eo --headed       # EO journey, browser visible
-```
-
-### Skip tracker update
-
-```bash
-./run-uat.sh --no-tracker      # run tests only, don't touch Excel
-```
-
----
-
-## Viewing the HTML Report
-
-After a run, open the Playwright report for screenshots and failure details:
-
-```bash
-npx playwright show-report
-```
-
-Or open `playwright-report/index.html` directly in your browser.
-
----
-
-## Updating the Excel Tracker Manually
-
-If you already have a `results/results.json` from a previous run:
-
-```bash
-python3 update_tracker.py results/results.json HatchEvent-UAT-Tracker-v6.xlsx
-```
-
-The script:
-- Reads every TC ID (`EO-TC-xx`, `VD-TC-xx`, `RFQ-TC-xx`, `SVC-TC-xx`) from the JSON
-- Writes **Pass** or **Fail** to column H, today's date to column K
-- Appends the error snippet to column S (Notes) on failures
-- Skips tests marked `test.skip()` — leaves their existing tracker status untouched
-- Applies the tracker's colour coding (green = Pass, red = Fail, yellow = Blocked)
-
----
-
-## Test Coverage
-
-| Journey | Sheet | TCs | Blocked (skipped) |
-|---------|-------|-----|-------------------|
-| EO Journey | EO Journey | 31 | 4 (EO-TC-27, 28, 29, 31) |
-| Vendor Registration | Vendor Registration | 26 | 5 (VD-TC-12, 13, 19, 22, 26) |
-| RFQ Process | RFQ Process | 18 | 1 (RFQ-TC-18) |
-| Event Service & RSVP | Event Service & RSVP | 16 | 2 (SVC-TC-15, 16) |
-| **Total** | | **91** | **12** |
-
-Blocked tests are `test.skip()` and map to known open bugs. They do **not** overwrite the tracker — their status stays as set manually.
-
----
-
-## Project Structure
-
-```
-playwright-uat/
-├── .env                      ← credentials (never commit this)
-├── .env.example              ← template to copy
-├── playwright.config.js      ← Playwright configuration
-├── package.json              ← npm scripts
-├── run-uat.sh                ← one-command runner (this file)
-├── update_tracker.py         ← writes results back to Excel
-├── helpers/
-│   ├── auth.js               ← loginAsEO(), loginAsVendor(), loginAsAdmin()
-│   └── common.js             ← goto(), fillField(), clickButton(), etc.
-├── tests/
-│   ├── eo-journey.spec.js
-│   ├── vendor-registration.spec.js
-│   ├── rfq-process.spec.js
-│   └── event-service.spec.js
-├── results/
-│   └── results.json          ← generated by Playwright after each run
-└── playwright-report/
-    └── index.html            ← generated HTML report
-```
-
----
-
-## Troubleshooting
-
-### "Credentials missing or have placeholder values"
-Edit `.env` and replace every `your_*` value with real staging credentials.
-
-### Tests fail immediately at login
-- Verify the EO/Vendor accounts exist on staging and the passwords are correct.
-- Run with `--headed` to watch the browser and see what's happening.
-
-### "results/results.json not found"
-The Playwright JSON reporter wasn't configured or the test run itself failed before writing output. Check `playwright.config.js` → `reporter` section.
-
-### openpyxl not installed
-The tracker updater self-installs it on first run. If it fails:
-```bash
-pip install openpyxl --break-system-packages
-```
-
-### Stripe payment tests
-Tests that go through Stripe (RFQ-TC-12, RFQ-TC-13, SVC-TC-08) use the test card `4242 4242 4242 4242`. This only works if the staging Stripe integration is in **test mode**. If staging is wired [...]
+Page knowledge lives in `helpers/portal.js`: routes, headings, the Wizard and RSVP step helpers. A UI rename usually needs a one-line change there.
+When a bug is fixed and its `Known Bug` test flips to **Fixed? Re-test**, remove its `test.fail(...)` line. From then on it guards against the bug coming back.

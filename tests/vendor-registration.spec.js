@@ -1,257 +1,194 @@
-// tests/vendor-registration.spec.js — Vendor UAT (VD-TC-01 through VD-TC-26)
-// Source: HatchEvent UAT Tracker — Level 2
-// Selectors verified against portal.staging.hatchevent.com — 2026-11-06
+// tests/vendor-registration.spec.js — Level 2 · Vendor journey (VD-TC-01 … 26)
+const { test, expect, meta } = require('../helpers/fixtures');
+const { open, heading, bodyText, tickTerms, wizard, VENDOR_PAGES, VENDOR_STATE, EO_STATE, NO_STATE } = require('../helpers/portal');
 
-const { test, expect } = require('@playwright/test');
-const { loginAsVendor, loginAsAdmin, logout } = require('../helpers/auth');
-const { screenshot, checkEmail } = require('../helpers/common');
+async function linkOk(request, url) {
+  const r = await request.get(url, { maxRedirects: 5, failOnStatusCode: false });
+  return r.status();
+}
 
-const BASE = process.env.BASE_URL || 'https://portal.staging.hatchevent.com';
+test.describe('VD-TC-01–04 · Vendor registration (logged out)', () => {
+  test.use({ storageState: NO_STATE });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Account Registration
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-01–05 · Account Registration', () => {
-
-  test('VD-TC-01 · Vendor Sign-Up Button Available', async ({ page }) => {
-    await page.goto('/auth/login');
+  test('VD-TC-01 · Vendor can start registration (stops before account creation)', meta('Partial', null, 'Account creation is done by Laurent/iFoundries'), async ({ page }) => {
+    await open(page, '/auth/register');
     await page.getByRole('button', { name: 'Vendor' }).click();
-    await page.waitForTimeout(1000);
-    await expect(page.getByRole('button', { name: 'Create account' })).toBeVisible();
-    await screenshot(page, 'VD-TC-01-vendor-signup-available');
+    await page.getByRole('button', { name: /^continue$/i }).first().click();
+    await expect(page.getByText('Field is required').first()).toBeVisible();
   });
 
-  test('VD-TC-02 · Vendor OTP/Email Verification', async ({ page }) => {
-    await page.goto('/auth/login');
+  test('VD-TC-02 · Vendor verifies email via OTP', meta('Manual', null, 'Needs a real inbox'), async () => { test.skip(true, 'Manual — OTP email'); });
+
+  test('VD-TC-03 · Vendor Google sign-in option is offered', meta('Partial', null, 'OAuth popup completed by a person'), async ({ page }) => {
+    await open(page, '/auth/login');
     await page.getByRole('button', { name: 'Vendor' }).click();
-    await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
-    await checkEmail('Verify your HatchEvent vendor account');
-    await screenshot(page, 'VD-TC-02-vendor-verification');
+    await expect(page.getByRole('button', { name: /continue with google/i })).toBeVisible();
   });
 
-  test('VD-TC-03 · Vendor Google Sign-In Available', async ({ page }) => {
-    await page.goto('/auth/login');
-    await page.getByRole('button', { name: 'Vendor' }).click();
-    await page.waitForTimeout(1000);
-    await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
-    await screenshot(page, 'VD-TC-03-vendor-google-oauth');
-  });
-
-  test('VD-TC-04 · Vendor Login', async ({ page }) => {
-    await loginAsVendor(page);
-    // After login, lands on /vendor or /vendor/dashboard
-    await expect(page).toHaveURL(/\/vendor(\/|$)/);
-    // Greeting heading uses the vendor's name (bumped timeout for slow dashboard load)
-    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 20_000 });
-    await screenshot(page, 'VD-TC-04-vendor-dashboard');
-  });
-
-  test('VD-TC-05 · Vendor Forgot Password', async ({ page }) => {
-    await page.goto('/auth/login');
-    await page.getByRole('button', { name: 'Vendor' }).click();
-    await page.getByRole('link', { name: 'Forgot your password?' }).click();
-    await page.waitForTimeout(2000);
-    await expect(
-      page.getByRole('textbox', { name: /email/i })
-        .or(page.getByRole('heading', { name: /forgot|reset|recover/i }))
-    ).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'VD-TC-05-vendor-forgot-password');
+  test('VD-TC-04 · Knowledge Base and FAQ links resolve (BUG-06)', meta('Full', 'BUG-06'), async ({ page, request }) => {
+    await open(page, '/auth/register');
+    for (const name of ['Knowledge Base', 'Frequently Asked Questions']) {
+      const href = await page.getByRole('link', { name }).first().getAttribute('href');
+      expect(href, name).toMatch(/^https?:\/\//);
+      expect(await linkOk(request, href), `${name} → ${href}`).toBeLessThan(400);
+    }
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Dashboard & Overview
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-06–08 · Dashboard', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
+test.describe('VD-TC-05–26 · Signed-in vendor', () => {
+  test.use({ storageState: VENDOR_STATE });
 
-  test('VD-TC-06 · Dashboard RFQ Status Tiles', async ({ page }) => {
-    await page.goto('/vendor/dashboard');
-    // Dashboard has stat headings for all RFQ statuses
-    for (const label of ['New', 'Accepted', 'Pending', 'Rejected', 'Completed', 'Expired']) {
-      await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible({ timeout: 10_000 });
-    }
-    await screenshot(page, 'VD-TC-06-dashboard-tiles');
+  test('VD-TC-05 · Company profile shows company information', meta('Full', null, 'Editing is not offered on web Profile (26 Nov)'), async ({ page }) => {
+    await open(page, '/vendor/profile');
+    const t = await bodyText(page);
+    for (const f of ['Company name', 'Membership no', 'Account type', 'UEN No', 'GST Registration No', 'Company contact number', 'Designation']) expect(t, f).toContain(f);
+    expect(t).toMatch(/Account type Company/);
+    test.info().annotations.push({ type: 'note', description: /UEN No -/.test(t) ? 'UEN not filled for test vendor' : 'UEN present' });
   });
 
-  test('VD-TC-07 · Dashboard Spending / Credits / Points', async ({ page }) => {
-    await page.goto('/vendor/dashboard');
-    for (const label of ['Total spending', 'Subscriptions', 'Credits', 'Points']) {
-      await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible({ timeout: 10_000 });
-    }
-    await screenshot(page, 'VD-TC-07-dashboard-wallet');
+  test('VD-TC-06 · Vendor uploads business documents', meta('Manual', null, 'No document upload on web profile (26 Nov) — confirm where documents are collected'), async () => { test.skip(true, 'Manual'); });
+  test('VD-TC-07 · Vendor uploads logo and cover image', meta('Manual', null, 'Upload not automated — needs real image assets'), async () => { test.skip(true, 'Manual'); });
+
+  test('VD-TC-08 · Membership tiers Gold/Silver/Bronze are shown with prices and current tier', meta('Full'), async ({ page }) => {
+    await open(page, '/vendor/membership');
+    for (const t of ['Gold', 'Silver', 'Bronze']) await expect(heading(page, t)).toBeVisible();
+    await expect(page.getByText('YOUR CURRENT TIER')).toBeVisible();
+    expect(await bodyText(page)).toMatch(/\$ ?2,400 \/ year/);
   });
 
-  test('VD-TC-08 · Vendor Sidebar Navigation', async ({ page }) => {
-    await page.goto('/vendor');
-    const sidebarLinks = [
-      { name: 'Dashboard',          url: /\/vendor\/?$|\/vendor\/dashboard/ },
-      { name: 'Listing',            url: /\/vendor\/listing/ },
-      { name: 'RFQs',               url: /\/vendor\/rfqs/ },
-      { name: 'Membership',         url: /\/vendor\/membership/ },
-      { name: 'Credits and points', url: /credits/ },
-      { name: 'Sponsored links',    url: /sponsored/ },
-      { name: 'EDMs',               url: /edm/i },
-      { name: 'Invoices',           url: /invoice/i },
-      { name: 'Profile',            url: /profile/ },
-      { name: 'Team',               url: /team/ },
-      { name: 'Settings',           url: /settings/ },
-    ];
-    for (const link of sidebarLinks) {
-      try {
-        await page.getByRole('link', { name: link.name, exact: true }).click();
-        await page.waitForLoadState('networkidle', { timeout: 10_000 });
-        // Note: some may 404 — only assert when page loaded
-      } catch (e) { /* link may not exist on this account */ }
-    }
-    await screenshot(page, 'VD-TC-08-vendor-sidebar');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Listings
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-09–14 · Listings', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('VD-TC-09 · View Listings Page', async ({ page }) => {
-    await page.goto('/vendor/listing');
-    // Listing heading — use first() because sidebar also has "Listing"
-    await expect(page.getByRole('heading', { name: 'Listing' }).first()).toBeVisible({ timeout: 10_000 });
-    // Each listing has View/Edit/Archive/Delete buttons
-    await expect(page.getByRole('button', { name: 'View' }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Create listing' })).toBeVisible();
-    await screenshot(page, 'VD-TC-09-listings-page');
+  test('VD-TC-09 · Membership page shows current plan, record and upgrade options', meta('Partial', null, 'Test vendor is Gold (top tier) so a paid upgrade cannot be walked; payment is manual'), async ({ page }) => {
+    await open(page, '/vendor/member-ship');
+    await expect(heading(page, 'Membership Record')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Buy Listings' }).first()).toBeVisible();
+    const t = await bodyText(page);
+    expect(t).toMatch(/Order ID \d+VC\d+/);
+    expect(t).toMatch(/Membership cycle \d{2} \w{3} \d{4} – \d{2} \w{3} \d{4}/);
   });
 
-  test('VD-TC-10 · Create Listing Button Available — BUG-14 regression (no duplicate categories)', async ({ page }) => {
-    await page.goto('/vendor/listing');
-    await page.getByRole('button', { name: 'Create listing' }).click();
-    await page.waitForTimeout(3000);
-    await screenshot(page, 'VD-TC-10-create-listing-form');
+  test('VD-TC-10 · Listing creation offers self-serve and assisted options (BUG-14)', meta('Partial', 'BUG-14', 'Category step not opened: "Continue" reserves a listing number (POST listing-number) — category duplicates checked manually'), async ({ page }) => {
+    await open(page, '/vendor/listing/create');
+    await expect(page.getByRole('button', { name: /Create my own listing/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Get help from the Hatch Event team/ })).toBeVisible();
   });
 
-  test('VD-TC-11 · Edit Existing Listing', async ({ page }) => {
-    await page.goto('/vendor/listing');
+  test('VD-TC-11 · Upload listing photos within 10 MB', meta('Manual', 'BUG-28', 'Would modify a live listing'), async () => { test.skip(true, 'Manual'); });
+  test('VD-TC-12 · Photos over 10 MB are rejected with a clear message', meta('Manual', 'BUG-28', 'Would modify a live listing'), async () => { test.skip(true, 'Manual'); });
+
+  test('VD-TC-13 · Edit opens the listing form for a published listing (BUG-13)', meta('Partial', 'BUG-13', 'Changing the type is not saved — check editability by hand'), async ({ page }) => {
+    await open(page, '/vendor/listing');
     await page.getByRole('button', { name: 'Edit' }).first().click();
-    await page.waitForTimeout(3000);
-    await screenshot(page, 'VD-TC-11-edit-listing');
+    await expect(page).toHaveURL(/vendor\/form\?mode=edit&id=\d+/);
+    await expect(page.getByText(/What kind of service do you offer\?|Listing no/i).first()).toBeVisible({ timeout: 30_000 });
   });
 
-  test.skip('VD-TC-12 · Vendor Membership Pricing Display [BLOCKED — BUG-28 Confirmed Intended]', async ({ page }) => {});
-
-  test.skip('VD-TC-13 · Listing Requirements Conflict [BLOCKED — BUG-13]', async ({ page }) => {});
-
-  test('VD-TC-14 · Listing Archive/Delete Options', async ({ page }) => {
-    await page.goto('/vendor/listing');
-    await expect(page.getByRole('button', { name: 'Archive' }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Delete' }).first()).toBeVisible();
-    await screenshot(page, 'VD-TC-14-listing-actions');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: RFQs
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-15–18 · RFQs', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('VD-TC-15 · RFQs Page Loads', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Request for quotations' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('textbox', { name: /Search RFQs/i })).toBeVisible();
-    await screenshot(page, 'VD-TC-15-rfqs-page');
+  test('VD-TC-14 · Vendor\'s live listing is visible to EOs in search results', meta('Full'), async ({ page, browser }) => {
+    await open(page, '/vendor/listing');
+    const live = (await page.getByRole('heading', { level: 2 }).allInnerTexts()).find(t => /Listing \d/.test(t) && /Catering/.test(t));
+    test.skip(!live, 'No live catering listing on the test vendor');
+    const eoCtx = await browser.newContext({ storageState: EO_STATE });
+    const eo = await eoCtx.newPage();
+    await wizard.start(eo); await wizard.fillWhen(eo);
+    await wizard.forward(eo).click();
+    await eo.getByLabel('Near me').check({ force: true });
+    await wizard.forward(eo).click();
+    await eo.getByRole('button', { name: 'Catering', exact: true }).click();
+    await wizard.forward(eo).click();
+    await expect(eo.getByRole('heading', { name: live }).first()).toBeVisible({ timeout: 30_000 });
+    await eoCtx.close();
   });
 
-  test('VD-TC-16 · Current RFQs Section', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Current RFQs' })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'VD-TC-16-current-rfqs');
+  test('VD-TC-15 · Admin creates a listing for a vendor', meta('Manual', 'BUG-30', 'Admin portal — manual'), async () => { test.skip(true, 'Manual'); });
+
+  test('VD-TC-16 · RFQs appear in the vendor portal with event details', meta('Partial', null, 'Email notification is manual'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    await expect(heading(page, 'Current RFQs')).toBeVisible();
+    const t = await bodyText(page);
+    expect(t).toMatch(/Event enquiry no EE-\d{4}-\d+/);
+    for (const f of ['Event date', 'No of pax', 'Your category', 'Your listing', 'Status']) expect(t, f).toContain(f);
   });
 
-  test('VD-TC-17 · Past RFQs with Status Filters', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    await expect(page.getByRole('heading', { name: 'Past RFQs' })).toBeVisible({ timeout: 10_000 });
-    // Status filter buttons
-    for (const status of ['All', 'Completed', 'Rejected', 'Expired']) {
-      await expect(page.getByRole('button', { name: status, exact: true })).toBeVisible();
+  test('VD-TC-17 · RFQ list and "View all" open without 404 (BUG-15)', meta('Partial', 'BUG-15', 'Quotation purchase via Stripe is manual'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    await page.getByRole('button', { name: 'View all' }).first().click();
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page.getByText(/404|page not found/i)).toHaveCount(0);
+  });
+
+  test('VD-TC-18 · Expired RFQs offer no Submit / Purchase / Reject (BUG-31, BUG-40)', meta('Full', 'BUG-31, BUG-40'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    await page.getByRole('button', { name: 'Expired', exact: true }).click();
+    await expect(page.getByText(/Expiry reason/).first()).toBeVisible();
+    const past = page.getByRole('heading', { name: 'Past RFQs' }).locator('xpath=ancestor::section[1] | ancestor::div[.//h2][2]').first();
+    for (const b of ['Submit', 'Purchase', 'Reject', 'Accept']) {
+      await expect(page.getByRole('button', { name: b, exact: true }), `${b} on expired RFQ`).toHaveCount(0);
     }
-    await screenshot(page, 'VD-TC-17-past-rfqs-filters');
   });
 
-  test('VD-TC-18 · Submit a Quotation to a Current RFQ', async ({ page }) => {
-    await page.goto('/vendor/rfqs');
-    const submitBtn = page.getByRole('button', { name: 'Submit' }).first();
-    if (await submitBtn.count() > 0) {
-      await expect(submitBtn).toBeVisible();
-      // Click flow proceeds to bid/quote submission
-      await submitBtn.click();
-      await page.waitForTimeout(3000);
+  test('VD-TC-19 · Vendor can decline an RFQ with a reason (BUG-35)', meta('Manual', 'BUG-35', 'No pending RFQ on the test vendor today; rejecting is a real write'), async ({ page }) => {
+    await open(page, '/vendor/rfqs');
+    const reject = page.getByRole('button', { name: /reject|decline/i });
+    test.skip(await reject.count() === 0, 'No pending RFQ with a Reject button right now');
+    await expect(reject.first()).toBeEnabled();
+  });
+
+  test('VD-TC-20 · Every vendor sidebar link opens the right page', meta('Full'), async ({ page }) => {
+    await open(page, '/vendor/dashboard');
+    for (const p of VENDOR_PAGES) {
+      await test.step(p.label, async () => {
+        await page.locator('aside').getByRole('link', { name: p.label, exact: true }).first().click();
+        await expect(page).toHaveURL(new RegExp(p.path.replace(/\//g, '\\/') + '$'));
+        await expect(heading(page, p.heading)).toBeVisible();
+      });
     }
-    await screenshot(page, 'VD-TC-18-submit-quotation');
+  });
+
+  test('VD-TC-21 · Vendor Membership is listed under Vendors in the site footer (BUG-33)', meta('Full', 'BUG-33'), async ({ page, request }) => {
+    await open(page, '/vendor/membership');
+    const vendors = page.locator('footer').getByText('Vendors', { exact: true });
+    await expect(vendors).toBeVisible();
+    const href = await page.locator('footer').getByRole('link', { name: 'Membership' }).getAttribute('href');
+    expect(await linkOk(request, href)).toBeLessThan(400);
+  });
+
+  test('VD-TC-22 · EDM campaign: choosing a listing shows EDM packages', meta('Full', 'BUG-03, NEW-02', 'NEW-02: packages never load after a listing is chosen — Continue stays disabled (26 Nov)'), async ({ page }) => {
+    test.fail(true, 'NEW-02 — EDM packages do not load (still present)');
+    await open(page, '/vendor/edm');
+    await page.locator('select').first().selectOption({ index: 1 });
+    await expect(page.getByText(/\$|credits/i).filter({ hasNotText: 'Singapore Dollars' }).first(), 'EDM packages should appear').toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled(); // until a package is chosen
+  });
+
+  test('VD-TC-23 · Team invite form opens; Send stays disabled without an email', meta('Partial', null, 'Invite is never sent'), async ({ page }) => {
+    await open(page, '/vendor/team');
+    expect(await bodyText(page)).toMatch(/All \(\d+\) Member \(\d+\) Manager \(\d+\) Owner \(\d+\)/);
+    await page.getByRole('button', { name: 'Invite teammates' }).click();
+    await expect(page.getByRole('button', { name: /send invite/i })).toBeDisabled();
+  });
+
+  test('VD-TC-24 · Vendor invoice PDF downloads with a real filename (BUG-29)', meta('Full', 'BUG-29'), async ({ page }) => {
+    await open(page, '/vendor/invoice');
+    const row = page.locator('tbody tr').first();
+    const [dl] = await Promise.all([page.waitForEvent('download'), row.locator('button, a').last().click()]);
+    expect(dl.suggestedFilename()).toMatch(/\.pdf$/i);
+    expect(dl.suggestedFilename()).not.toMatch(/^stream/i);
+    expect(require('fs').readFileSync(await dl.path()).subarray(0, 4).toString()).toBe('%PDF');
+  });
+
+  test('VD-TC-25 · Vendor portal is usable at phone size 390×844', meta('Full'), async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, '/vendor/dashboard');
+    await expect(heading(page, /^Hi /)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(2);
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Membership
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-19–22 · Membership', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test.skip('VD-TC-19 · Membership Admin Panel Mismatch [BLOCKED — BUG-35]', async ({ page }) => {});
-
-  test('VD-TC-20 · View Membership Tiers', async ({ page }) => {
-    await page.goto('/vendor/membership');
-    await expect(page.getByRole('heading', { name: 'Vendor Membership' })).toBeVisible({ timeout: 10_000 });
-    // 3 tier buttons with pricing: Gold ($200/mo), Silver ($50/mo), Bronze ($0)
-    await expect(page.getByRole('button', { name: /Gold/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Silver/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Bronze/i }).first()).toBeVisible();
-    await screenshot(page, 'VD-TC-20-membership-tiers');
+test.describe('VD-TC-26 · Registration legal links', () => {
+  test.use({ storageState: NO_STATE });
+  test('VD-TC-26 · Terms of Use and Privacy Policy links on registration resolve (BUG-34)', meta('Full', 'BUG-34'), async ({ page, request }) => {
+    await open(page, '/auth/register');
+    for (const name of ['Terms of Use', 'Privacy Policy']) {
+      const href = await page.getByRole('link', { name }).first().getAttribute('href');
+      expect(await linkOk(request, href), `${name} → ${href}`).toBeLessThan(400);
+    }
   });
-
-  test('VD-TC-21 · Current Tier Marker Shown', async ({ page }) => {
-    await page.goto('/vendor/membership');
-    // Test account is Gold — verify indicator is visible
-    await expect(page.getByText(/YOUR CURRENT TIER/i)).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'VD-TC-21-current-tier');
-  });
-
-  test.skip('VD-TC-22 · Membership Checkout Flow [BLOCKED — BUG-03]', async ({ page }) => {});
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Profile & Account
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-23–25 · Profile', () => {
-  test.beforeEach(async ({ page }) => { await loginAsVendor(page); });
-
-  test('VD-TC-23 · View Vendor Profile', async ({ page }) => {
-    await page.goto('/vendor/profile');
-    await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible({ timeout: 10_000 });
-    await screenshot(page, 'VD-TC-23-vendor-profile');
-  });
-
-  test('VD-TC-24 · Settings — Security Section', async ({ page }) => {
-    await page.goto('/vendor/settings');
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await page.getByRole('button', { name: 'Security' }).click();
-    await page.waitForTimeout(2000);
-    await screenshot(page, 'VD-TC-24-settings-security');
-  });
-
-  test('VD-TC-25 · Settings — Notifications Section', async ({ page }) => {
-    await page.goto('/vendor/settings');
-    await page.getByRole('button', { name: 'Notifications' }).click();
-    await page.waitForTimeout(2000);
-    await screenshot(page, 'VD-TC-25-settings-notifications');
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION: Edge Cases
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('VD-TC-26 · Edge Cases', () => {
-
-  test.skip('VD-TC-26 · Terms of Use Link Returns 404 [BLOCKED — BUG-34]', async ({ page }) => {});
 });

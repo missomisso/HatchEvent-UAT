@@ -59,6 +59,16 @@ jobs:
           python3 update_tracker.py results/results.json          # → HatchEvent_Playwright_Runs.xlsx (table: PlaywrightRuns)
           python3 scripts/build_catalogue.py results/results.json
 
+      - name: Sync results to ClickUp (Test Cases, Bug Log, Test Runs)
+        if: always()
+        continue-on-error: true   # never block the test job
+        env:
+          CLICKUP_TOKEN:        ${{ secrets.CLICKUP_TOKEN }}
+          CLICKUP_TEST_LIST_ID: '1100330000207979'
+          CLICKUP_BUG_LIST_ID:  '1100330000207139'
+          CLICKUP_RUNS_LIST_ID: '1100330000208806'
+        run: python3 scripts/clickup_sync.py results/results.json
+
       - name: Upload run results + catalogue
         if: always()
         uses: actions/upload-artifact@v4

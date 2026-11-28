@@ -18,6 +18,9 @@ on:
   schedule:
     - cron: '0 19 * * 0-4'   # Sun–Thu 19:00 UTC = Mon–Fri 03:00 SGT
 
+permissions:
+  contents: write   # lets the run commit data/latest-results.csv for the UAT Tracker
+
 jobs:
   run-uat:
     name: Run Playwright UAT
@@ -58,6 +61,19 @@ jobs:
           if [ ! -f results/results.json ]; then echo "::warning::No results.json"; exit 0; fi
           python3 update_tracker.py results/results.json          # → HatchEvent_Playwright_Runs.xlsx (table: PlaywrightRuns)
           python3 scripts/build_catalogue.py results/results.json
+
+      - name: Publish results for the UAT Tracker (data/*.csv)
+        if: always()
+        continue-on-error: true   # never block the test job
+        run: |
+          if [ ! -f results/results.json ]; then echo "::warning::No results.json"; exit 0; fi
+          python3 scripts/export_csv.py results/results.json
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/latest-results.csv data/results-history.csv
+          if git diff --cached --quiet; then echo "No result changes"; exit 0; fi
+          git commit -m "UAT results: run #${{ github.run_number }}"
+          git pull --rebase origin main && git push origin HEAD:main
 
       - name: Upload run results + catalogue
         if: always()
